@@ -1,4 +1,4 @@
-use crate::lexer::lexer::Token;
+use crate::lexer::lexer::Lexer;
 
 pub(crate) mod lexer;
 

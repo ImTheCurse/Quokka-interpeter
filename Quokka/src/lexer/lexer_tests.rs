@@ -22,13 +22,16 @@ mod tests {
             (TokenType(EOF.to_string()), ""),
         ];
 
-        let lex = Lexer::new(input);
+        let mut x = Lexer {
+            input: input.to_string(),
+            ch: '=',
+        };
+        let mut lex = Lexer::new(&mut x, input.to_string());
 
-        for (i, testTup) in vec.iter().enumerate() {
+        for (_, testTup) in vec.iter().enumerate() {
             let tok = lex.next_token();
             assert_eq!(tok.tok_type, testTup.0);
             assert_eq!(tok.literal, testTup.1);
-            println!("Token literal: {}, literal: {}", tok.literal, testTup.1);
         }
     }
 }
