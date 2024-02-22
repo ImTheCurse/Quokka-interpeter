@@ -33,7 +33,6 @@ fn split_special_chars(inp: &str) -> String {
     s = s.replace('{', " { ");
     s = s.replace('}', " } ");
     s = s.replace(',', " , ");
-    println!("{}", s);
     return s;
 }
 
@@ -72,37 +71,37 @@ impl Lexer {
         self.ch = first_token.chars().next().unwrap_or('~');
 
         match first_token {
-            COMMA => Token {
-                tok_type: TokenType(COMMA.to_string()),
-                literal: COMMA.to_string(),
+            "," => Token {
+                tok_type: TokenType::Comma,
+                literal: ",".to_string(),
             },
-            SEMICOLON => Token {
-                tok_type: TokenType(SEMICOLON.to_string()),
-                literal: SEMICOLON.to_string(),
+            ";" => Token {
+                tok_type: TokenType::Semicolon,
+                literal: ";".to_string(),
             },
-            LPAREN => Token {
-                tok_type: TokenType(LPAREN.to_string()),
-                literal: LPAREN.to_string(),
+            "(" => Token {
+                tok_type: TokenType::Lparen,
+                literal: "(".to_string(),
             },
-            RPAREN => Token {
-                tok_type: TokenType(RPAREN.to_string()),
-                literal: RPAREN.to_string(),
+            ")" => Token {
+                tok_type: TokenType::Rparen,
+                literal: ")".to_string(),
             },
-            LBRACK => Token {
-                tok_type: TokenType(LBRACK.to_string()),
-                literal: LBRACK.to_string(),
+            "{" => Token {
+                tok_type: TokenType::Lbrack,
+                literal: "{".to_string(),
             },
-            RBRACK => Token {
-                tok_type: TokenType(RBRACK.to_string()),
-                literal: RBRACK.to_string(),
+            "}" => Token {
+                tok_type: TokenType::Rbrack,
+                literal: "}".to_string(),
             },
-            PLUS => Token {
-                tok_type: TokenType(PLUS.to_string()),
-                literal: PLUS.to_string(),
+            "+" => Token {
+                tok_type: TokenType::Plus,
+                literal: "+".to_string(),
             },
-            ASSIGN => Token {
-                tok_type: TokenType(ASSIGN.to_string()),
-                literal: ASSIGN.to_string(),
+            "=" => Token {
+                tok_type: TokenType::Assign,
+                literal: "=".to_string(),
             },
             _ => {
                 if self.ch.is_ascii_alphabetic() {
@@ -113,18 +112,19 @@ impl Lexer {
                 } else if first_token == "" {
                     Token {
                         literal: first_token.to_string(),
-                        tok_type: TokenType(EOF.to_string()),
+                        tok_type: TokenType::EOF,
                     }
                 } else if is_token_number(first_token) {
+                    let num: i32 = first_token.parse().unwrap();
                     Token {
                         //when parsing, note for other chars such as ;. there is a need to check
                         //each character in the token is actually an int.
-                        literal: first_token.parse().unwrap(),
-                        tok_type: TokenType(INT.to_string()),
+                        literal: num.to_string(),
+                        tok_type: TokenType::Int(num),
                     }
                 } else {
                     Token {
-                        tok_type: TokenType(ILLEGAL.to_string()),
+                        tok_type: TokenType::Illegal,
                         literal: "".to_string(),
                     }
                 }

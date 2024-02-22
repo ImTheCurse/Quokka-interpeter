@@ -4,39 +4,34 @@ mod tests {
     use super::*;
     use crate::lexer::lexer::*;
     use crate::token;
-    use token::token::{
-        Token, TokenType, ASSIGN, COMMA, EOF, FUNCTION, IDENT, INT, LBRACK, LET, LPAREN, PLUS,
-        RBRACK, RPAREN, SEMICOLON,
-    };
-    /*
-        #[test]
-        fn test_next_token_chars_only() {
-            let input: &str = "=+(){},;";
-            let vec: Vec<(TokenType, &str)> = vec![
-                (TokenType(ASSIGN.to_string()), "="),
-                (TokenType(PLUS.to_string()), "+"),
-                (TokenType(LPAREN.to_string()), "("),
-                (TokenType(RPAREN.to_string()), ")"),
-                (TokenType(LBRACK.to_string()), "{"),
-                (TokenType(RBRACK.to_string()), "}"),
-                (TokenType(COMMA.to_string()), ","),
-                (TokenType(SEMICOLON.to_string()), ";"),
-                (TokenType(EOF.to_string()), ""),
-            ];
+    use token::token::{Token, TokenType};
+    #[test]
+    fn test_next_token_chars_only() {
+        let input: &str = "= +(){},;";
+        let vec: Vec<(TokenType, &str)> = vec![
+            (TokenType::Assign, "="),
+            (TokenType::Plus, "+"),
+            (TokenType::Lparen, "("),
+            (TokenType::Rparen, ")"),
+            (TokenType::Lbrack, "{"),
+            (TokenType::Rbrack, "}"),
+            (TokenType::Comma, ","),
+            (TokenType::Semicolon, ";"),
+            (TokenType::EOF, ""),
+        ];
 
-            let mut x = Lexer {
-                input: input.to_string(),
-                ch: '=',
-            };
-            let mut lex = Lexer::new(&mut x, input.to_string());
+        let mut x = Lexer {
+            input: input.to_string(),
+            ch: '=',
+        };
+        let mut lex = Lexer::new(&mut x, input.to_string());
 
-            for (_, testTup) in vec.iter().enumerate() {
-                let tok = lex.next_token();
-                assert_eq!(tok.tok_type, testTup.0);
-                assert_eq!(tok.literal, testTup.1);
-            }
+        for (_, testTup) in vec.iter().enumerate() {
+            let tok = lex.next_token();
+            assert_eq!(tok.tok_type, testTup.0);
+            assert_eq!(tok.literal, testTup.1);
         }
-    */
+    }
     #[test]
     fn test_next_token_full() {
         let input: &str = "let five = 5;
@@ -46,43 +41,43 @@ mod tests {
             };
             let result = add(five,ten);";
         let vec: Vec<(TokenType, &str)> = vec![
-            (TokenType(LET.to_string()), "let"),
-            (TokenType(IDENT.to_string()), "five"),
-            (TokenType(ASSIGN.to_string()), "="),
-            (TokenType(INT.to_string()), "5"),
-            (TokenType(SEMICOLON.to_string()), ";"),
-            (TokenType(LET.to_string()), "let"),
-            (TokenType(IDENT.to_string()), "ten"),
-            (TokenType(ASSIGN.to_string()), "="),
-            (TokenType(INT.to_string()), "10"),
-            (TokenType(SEMICOLON.to_string()),";"),
-            (TokenType(LET.to_string()), "let"),
-            (TokenType(IDENT.to_string()), "add"),
-            (TokenType(ASSIGN.to_string()), "="),
-            (TokenType(FUNCTION.to_string()), "fn"),
-            (TokenType(LPAREN.to_string()), "("),
-            (TokenType(IDENT.to_string()), "x"),
-            (TokenType(COMMA.to_string()), ","),
-            (TokenType(IDENT.to_string()), "y"),
-            (TokenType(RPAREN.to_string()), ")"),
-            (TokenType(LBRACK.to_string()), "{"),
-            (TokenType(IDENT.to_string()), "x"),
-            (TokenType(PLUS.to_string()), "+"),
-            (TokenType(IDENT.to_string()), "y"),
-            (TokenType(SEMICOLON.to_string()), ";"),
-            (TokenType(RBRACK.to_string()), "}"),
-            (TokenType(SEMICOLON.to_string()), ";"),
-            (TokenType(LET.to_string()), "let"),
-            (TokenType(IDENT.to_string()), "result"),
-            (TokenType(ASSIGN.to_string()), "="),
-            (TokenType(IDENT.to_string()), "add"),
-            (TokenType(LPAREN.to_string()), "("),
-            (TokenType(IDENT.to_string()), "five"),
-            (TokenType(COMMA.to_string()), ","),
-            (TokenType(IDENT.to_string()), "ten"),
-            (TokenType(RPAREN.to_string()), ")"),
-            (TokenType(SEMICOLON.to_string()), ";"),
-            (TokenType(EOF.to_string()), ""),
+            (TokenType::Let, "let"),
+            (TokenType::Ident, "five"),
+            (TokenType::Assign, "="),
+            (TokenType::Int(5), "5"),
+            (TokenType::Semicolon, ";"),
+            (TokenType::Let, "let"),
+            (TokenType::Ident, "ten"),
+            (TokenType::Assign, "="),
+            (TokenType::Int(10), "10"),
+            (TokenType::Semicolon, ";"),
+            (TokenType::Let, "let"),
+            (TokenType::Ident, "add"),
+            (TokenType::Assign, "="),
+            (TokenType::Function, "fn"),
+            (TokenType::Lparen, "("),
+            (TokenType::Ident, "x"),
+            (TokenType::Comma, ","),
+            (TokenType::Ident, "y"),
+            (TokenType::Rparen, ")"),
+            (TokenType::Lbrack, "{"),
+            (TokenType::Ident, "x"),
+            (TokenType::Plus, "+"),
+            (TokenType::Ident, "y"),
+            (TokenType::Semicolon, ";"),
+            (TokenType::Rbrack, "}"),
+            (TokenType::Semicolon, ";"),
+            (TokenType::Let, "let"),
+            (TokenType::Ident, "result"),
+            (TokenType::Assign, "="),
+            (TokenType::Ident, "add"),
+            (TokenType::Lparen, "("),
+            (TokenType::Ident, "five"),
+            (TokenType::Comma, ","),
+            (TokenType::Ident, "ten"),
+            (TokenType::Rparen, ")"),
+            (TokenType::Semicolon, ";"),
+            (TokenType::EOF, ""),
         ];
 
         let mut x = Lexer {
@@ -91,10 +86,10 @@ mod tests {
         };
         let mut lex = Lexer::new(&mut x, input.to_string());
 
-        for (_, testTup) in vec.iter().enumerate() {
+        for (_, test_tup) in vec.iter().enumerate() {
             let tok = lex.next_token();
-            assert_eq!(tok.tok_type, testTup.0);
-            assert_eq!(tok.literal, testTup.1);
+            assert_eq!(tok.tok_type, test_tup.0);
+            assert_eq!(tok.literal, test_tup.1);
         }
     }
 }
