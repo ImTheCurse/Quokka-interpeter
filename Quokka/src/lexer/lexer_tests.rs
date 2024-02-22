@@ -40,11 +40,11 @@ mod tests {
     #[test]
     fn test_next_token_full() {
         let input: &str = "let five = 5;
-      let ten = 10;
-      let add = fn(x,y){
-          x + y;
-          };
-      let result = add(five,ten);";
+            let ten = 10;
+            let add = fn(x,y){
+            x + y;
+            };
+            let result = add(five,ten);";
         let vec: Vec<(TokenType, &str)> = vec![
             (TokenType(LET.to_string()), "let"),
             (TokenType(IDENT.to_string()), "five"),
@@ -55,6 +55,7 @@ mod tests {
             (TokenType(IDENT.to_string()), "ten"),
             (TokenType(ASSIGN.to_string()), "="),
             (TokenType(INT.to_string()), "10"),
+            (TokenType(SEMICOLON.to_string()),";"),
             (TokenType(LET.to_string()), "let"),
             (TokenType(IDENT.to_string()), "add"),
             (TokenType(ASSIGN.to_string()), "="),
