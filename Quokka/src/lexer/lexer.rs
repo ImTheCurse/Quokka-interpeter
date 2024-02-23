@@ -1,3 +1,5 @@
+use std::mem::replace;
+
 use crate::token::token::*;
 
 #[derive(Clone)]
@@ -24,6 +26,12 @@ fn consume_white_space(input: &str) -> String {
     String::new()
 }
 
+fn insert_str_at_start(append_to: &str, to_append: &str) -> String {
+    let mut temp: String = String::from(to_append);
+    temp = temp + append_to;
+    temp
+}
+
 //to use only on "Constructor", could be used on nextToken but not preferable.
 #[allow(unused_assignments)]
 fn split_special_chars(inp: &str) -> String {
@@ -33,6 +41,12 @@ fn split_special_chars(inp: &str) -> String {
     s = s.replace('{', " { ");
     s = s.replace('}', " } ");
     s = s.replace(',', " , ");
+    s = s.replace(';', " ; ");
+    s = s.replace('-', " - ");
+    s = s.replace('*', " * ");
+    s = s.replace('/', " / ");
+    s = s.replace('<', " < ");
+    s = s.replace('>', ">");
     return s;
 }
 
@@ -59,16 +73,14 @@ impl Lexer {
         //TODO use split.once(" ") to get the first token and use split.remainder() to consume and assign it to self.input
 
         let binding = self.input.clone();
-        let mut first_token = binding.split_whitespace().next().unwrap_or("");
+        let first_token = binding.split_whitespace().next().unwrap_or("");
+        let mut itr = first_token.chars();
 
         self.input = consume_white_space(&self.input);
         self.input = consume_first_word(&self.input);
 
-        if first_token.chars().last().unwrap_or(' ') == ';' && first_token.len() > 1 {
-            first_token = &first_token[0..first_token.len() - 1];
-            self.input.insert_str(0, "; ");
-        }
-        self.ch = first_token.chars().next().unwrap_or('~');
+        self.ch = itr.next().unwrap_or('~');
+        let peek_char = itr.next().unwrap_or('~');
 
         match first_token {
             "," => Token {
@@ -99,11 +111,68 @@ impl Lexer {
                 tok_type: TokenType::Plus,
                 literal: "+".to_string(),
             },
-            "=" => Token {
-                tok_type: TokenType::Assign,
-                literal: "=".to_string(),
+            "*" => Token {
+                tok_type: TokenType::Asterisk,
+                literal: "*".to_string(),
             },
+            "/" => Token {
+                tok_type: TokenType::Fslash,
+                literal: "/".to_string(),
+            },
+            "-" => Token {
+                tok_type: TokenType::Minus,
+                literal: "-".to_string(),
+            },
+            ">" => Token {
+                tok_type: TokenType::Rarrow,
+                literal: ">".to_string(),
+            },
+            "<" => Token {
+                tok_type: TokenType::Larrow,
+                literal: "<".to_string(),
+            },
+
             _ => {
+                //Check for != or !IDENT
+                if self.ch == '!' {
+                    if peek_char == '=' {
+                        let mut temp: String = String::from(first_token);
+                        temp.remove(0);
+                        temp.remove(0);
+                        self.input = insert_str_at_start(&self.input, &temp);
+                        return Token {
+                            tok_type: TokenType::NotEQ,
+                            literal: "!=".to_string(),
+                        };
+                    }
+
+                    let mut temp: String = String::from(first_token);
+                    temp.remove(0);
+                    self.input = insert_str_at_start(&self.input, &temp);
+                    return Token {
+                        tok_type: TokenType::Not,
+                        literal: "!".to_string(),
+                    };
+                }
+
+                //Check for assignment or equality
+                if self.ch == '=' {
+                    if peek_char == '=' {
+                        let mut temp: String = String::from(first_token);
+                        temp.remove(0);
+                        temp.remove(0);
+                        self.input = insert_str_at_start(&self.input, &temp);
+                    }
+                    let mut temp: String = String::from(first_token);
+                    temp.remove(0);
+                    self.input = insert_str_at_start(&self.input, &temp);
+
+                    return Token {
+                        tok_type: TokenType::Assign,
+                        literal: "=".to_string(),
+                    };
+                }
+
                 if self.ch.is_ascii_alphabetic() {
                     Token {
                         literal: first_token.to_string(),
