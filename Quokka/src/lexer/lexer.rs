@@ -173,6 +173,8 @@ impl Lexer {
                     };
                 }
 
+                //TODO if a char is alphabetic and contains = or != than seprate them and and add
+                //back the == or != or = to the input.
                 if self.ch.is_ascii_alphabetic() {
                     Token {
                         literal: first_token.to_string(),

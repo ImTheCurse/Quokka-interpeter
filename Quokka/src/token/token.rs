@@ -26,6 +26,11 @@ pub enum TokenType {
     Asterisk,
     Let,
     Function,
+    If,
+    Else,
+    True,
+    False,
+    Return,
 }
 
 pub struct Token {
@@ -36,8 +41,15 @@ pub struct Token {
 //for testing purposes, notice could fix the problm using lazy_static, but pay attention as it
 //could throw a runtime error.
 lazy_static! {
-    pub static ref keywords: HashMap<&'static str, TokenType> =
-        HashMap::from([("fn", TokenType::Function), ("let", TokenType::Let),]);
+    pub static ref keywords: HashMap<&'static str, TokenType> = HashMap::from([
+        ("fn", TokenType::Function),
+        ("let", TokenType::Let),
+        ("if", TokenType::If),
+        ("else", TokenType::Else),
+        ("true", TokenType::True),
+        ("false", TokenType::False),
+        ("return", TokenType::Return)
+    ]);
 }
 pub fn lookup_ident(ident: &str) -> TokenType {
     keywords.get(ident).unwrap_or(&TokenType::Ident).clone()
