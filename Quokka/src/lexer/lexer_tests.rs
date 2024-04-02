@@ -1,12 +1,9 @@
-use crate::token::token::TokenType;
-
 #[cfg(test)]
 mod tests {
 
-    use super::*;
     use crate::lexer::lexer::*;
     use crate::token;
-    use token::token::{Token, TokenType};
+    use token::token::TokenType;
     #[test]
     fn test_next_token_chars_only() {
         let input: &str = "= +(){},;";
@@ -182,7 +179,10 @@ mod tests {
                             return true;
                         }else{
                             return false;
-                        }";
+                        }
+
+                        10 == 10;
+                        10 != 9;";
         let vec: Vec<(TokenType, &str)> = vec![
             (TokenType::Let, "let"),
             (TokenType::Ident, "five"),
@@ -247,6 +247,14 @@ mod tests {
             (TokenType::False, "false"),
             (TokenType::Semicolon, ";"),
             (TokenType::Rbrack, "}"),
+            (TokenType::Int(10), "10"),
+            (TokenType::EQ, "=="),
+            (TokenType::Int(10), "10"),
+            (TokenType::Semicolon, ";"),
+            (TokenType::Int(10), "10"),
+            (TokenType::NotEQ, "!="),
+            (TokenType::Int(9), "9"),
+            (TokenType::Semicolon, ";"),
         ];
 
         let mut x = Lexer {

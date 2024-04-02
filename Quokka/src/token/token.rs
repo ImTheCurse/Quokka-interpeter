@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use lazy_static::lazy_static;
 
@@ -36,6 +39,16 @@ pub enum TokenType {
 pub struct Token {
     pub tok_type: TokenType,
     pub literal: String,
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.tok_type {
+            TokenType::Ident => write!(f, "Ident[{}]", self.literal),
+            TokenType::Int(s) => write!(f, "Int[{}]", s),
+            _ => write!(f, "{:?}", self.tok_type),
+        }
+    }
 }
 
 //for testing purposes, notice could fix the problm using lazy_static, but pay attention as it

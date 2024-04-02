@@ -1,5 +1,3 @@
-use std::mem::replace;
-
 use crate::token::token::*;
 
 #[derive(Clone)]
@@ -162,6 +160,10 @@ impl Lexer {
                         temp.remove(0);
                         temp.remove(0);
                         self.input = insert_str_at_start(&self.input, &temp);
+                        return Token {
+                            tok_type: TokenType::EQ,
+                            literal: "==".to_string(),
+                        };
                     }
                     let mut temp: String = String::from(first_token);
                     temp.remove(0);
@@ -175,6 +177,12 @@ impl Lexer {
 
                 //TODO if a char is alphabetic and contains = or != than seprate them and and add
                 //back the == or != or = to the input.
+                if first_token.contains("==") {}
+
+                if first_token.contains("!=") {}
+
+                if first_token.contains("=") {}
+
                 if self.ch.is_ascii_alphabetic() {
                     Token {
                         literal: first_token.to_string(),
