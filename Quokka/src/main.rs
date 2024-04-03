@@ -1,8 +1,11 @@
 use crate::lexer::lexer::Lexer;
 use crate::token::token::TokenType;
+use crate::AST::ast;
 use std::io::{self, Write};
 
+pub(crate) mod AST;
 pub(crate) mod lexer;
+pub(crate) mod parser;
 pub(crate) mod token;
 
 fn main() -> io::Result<()> {
