@@ -5,7 +5,7 @@ use std::{
 
 use lazy_static::lazy_static;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     Ident,
     Illegal,
