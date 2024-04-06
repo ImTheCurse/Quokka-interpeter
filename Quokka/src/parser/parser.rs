@@ -1,17 +1,19 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{Expression, Identifier, LetStatment, Literal, Program, Statment};
+use std::fmt::Write;
 
 #[derive(Clone)]
 pub struct Parser {
     pub lexer: Lexer,
     pub curr_token: Token,
     pub peek_token: Token,
+    pub errors: Vec<String>,
 }
 
 impl<'a> Parser {
     pub fn new(lex: Lexer) -> Parser {
-        let mut tok = Token{
+        let mut tok = Token {
             literal: "".to_string(),
             tok_type: TokenType::EOF,
         };
@@ -19,6 +21,7 @@ impl<'a> Parser {
             lexer: lex,
             curr_token: tok.clone(),
             peek_token: tok.clone(),
+            errors: vec![],
         };
         p.next_token_parser();
         p.next_token_parser();
@@ -54,10 +57,12 @@ impl<'a> Parser {
     }
 
     fn parse_let_statment(&mut self) -> Option<Statment> {
+        //expect_peek() also gets the next token
         //Current state:
         //curr_token = let
         //peek_token = identifier.
         if self.peek_token.tok_type != TokenType::Ident {
+            self.peek_error(TokenType::Ident);
             return None;
         }
         let ident = Identifier {
@@ -68,8 +73,8 @@ impl<'a> Parser {
         //State:
         //curr_token = identifier
         //peek_token = assignment
-
         if self.peek_token.tok_type != TokenType::Assign {
+            self.peek_error(TokenType::Assign);
             return None;
         }
         self.next_token_parser();
@@ -94,5 +99,19 @@ impl<'a> Parser {
             self.next_token_parser();
         }
         return Some(Statment::Let(stmt));
+    }
+
+    pub fn errors(&self) -> Vec<String> {
+        return self.errors.clone();
+    }
+
+    pub fn peek_error(&mut self, tok: TokenType) {
+        let mut message: String = String::new();
+        write!(
+            message,
+            "Expected next token: {}, got: {}",
+            tok, self.peek_token.tok_type
+        );
+        self.errors.push(message);
     }
 }
