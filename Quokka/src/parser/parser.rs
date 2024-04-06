@@ -57,10 +57,12 @@ impl<'a> Parser {
     }
 
     fn parse_let_statment(&mut self) -> Option<Statment> {
+        //expect_peek() also gets the next token
         //Current state:
         //curr_token = let
         //peek_token = identifier.
         if self.peek_token.tok_type != TokenType::Ident {
+            self.peek_error(TokenType::Ident);
             return None;
         }
         let ident = Identifier {
@@ -71,8 +73,8 @@ impl<'a> Parser {
         //State:
         //curr_token = identifier
         //peek_token = assignment
-
         if self.peek_token.tok_type != TokenType::Assign {
+            self.peek_error(TokenType::Assign);
             return None;
         }
         self.next_token_parser();
@@ -108,7 +110,7 @@ impl<'a> Parser {
         write!(
             message,
             "Expected next token: {}, got: {}",
-            self.peek_token.tok_type, tok
+            tok, self.peek_token.tok_type
         );
         self.errors.push(message);
     }
