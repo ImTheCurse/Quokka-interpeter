@@ -67,9 +67,6 @@ impl Lexer {
         return self.clone();
     }
     pub fn next_token(&mut self) -> Token {
-        //let tokens: Vec<&str> = self.input.split(" ").collect();
-        //TODO use split.once(" ") to get the first token and use split.remainder() to consume and assign it to self.input
-
         let binding = self.input.clone();
         let first_token = binding.split_whitespace().next().unwrap_or("");
         let mut itr = first_token.chars();
