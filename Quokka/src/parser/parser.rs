@@ -52,6 +52,7 @@ impl<'a> Parser {
     pub fn parse_statment(&mut self, curr_tok: Token) -> Option<Statment> {
         return match curr_tok.tok_type {
             TokenType::Let => self.parse_let_statment(),
+            TokenType::Return => self.parse_return_statments(),
             _ => None,
         };
     }
@@ -113,5 +114,9 @@ impl<'a> Parser {
             tok, self.peek_token.tok_type
         );
         self.errors.push(message);
+    }
+
+    pub fn parse_return_statments(&mut self) -> Option<Statment> {
+        todo!()
     }
 }

@@ -1,3 +1,5 @@
+use std::fmt::{write, Display};
+
 use crate::TokenType;
 
 #[derive(Clone)]
@@ -9,6 +11,7 @@ pub enum Expression {
 #[derive(Clone)]
 pub enum Statment {
     Let(LetStatment),
+    Return(ReturnStatment),
 }
 
 #[derive(Clone)]
@@ -30,4 +33,71 @@ pub struct LetStatment {
 #[derive(Clone)]
 pub struct Identifier {
     pub value: String,
+}
+
+#[derive(Clone)]
+pub struct ReturnStatment {
+    pub return_value: Expression,
+}
+
+#[derive(Clone)]
+pub struct ExpressionStatment {
+    expr: Expression,
+}
+
+impl Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::Literal(lit) => write!(f, "{}", lit.value),
+            Expression::Identifier(ident) => write!(f, "{}", ident.value),
+        }
+    }
+}
+
+impl Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl Display for LetStatment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "let {} = {};",
+            self.ident.to_string(),
+            self.value.to_string()
+        )
+    }
+}
+
+impl Display for ReturnStatment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "return {}", self.return_value.to_string());
+        write!(f, ";")
+    }
+}
+
+impl Display for Statment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        return match self {
+            Statment::Let(l) => write!(f, "{}", l.to_string()),
+            Statment::Return(ret) => write!(f, "{}", ret.to_string()),
+        };
+    }
+}
+
+impl Display for Program {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for stmt in &self.statments {
+            write!(f, "{}", stmt.to_string());
+        }
+        write!(f, "")
+    }
 }
