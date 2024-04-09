@@ -13,7 +13,7 @@ pub struct Parser {
 
 impl<'a> Parser {
     pub fn new(lex: Lexer) -> Parser {
-        let mut tok = Token {
+        let tok = Token {
             literal: "".to_string(),
             tok_type: TokenType::EOF,
         };
@@ -53,8 +53,15 @@ impl<'a> Parser {
         return match curr_tok.tok_type {
             TokenType::Let => self.parse_let_statment(),
             TokenType::Return => self.parse_return_statments(),
+            TokenType::Ident => self.parse_expr_statments(None),
+            TokenType::Int(num) => self.parse_expr_statments(Some(num)),
+
             _ => None,
         };
+    }
+
+    fn parse_expr_statments(&mut self, num: Option<i32>) -> Option<Statment> {
+        todo!()
     }
 
     fn parse_let_statment(&mut self) -> Option<Statment> {

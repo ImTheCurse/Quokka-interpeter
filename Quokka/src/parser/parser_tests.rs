@@ -87,4 +87,40 @@ mod test {
         }
     }
     */
+    #[test]
+    fn test_ident_expr() {
+        let input = "
+        foobar;
+        ";
+        let mut l = Lexer {
+            ch: 'f',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expression(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::Identifier(idtf) = &expr_stmt.expr {
+                if idtf.value != "foobar" {
+                    panic!("ident value not foobar, got:{} ", idtf.value);
+                }
+                return;
+            }
+            panic!("statment isn't expression. @test_ident_expr");
+        }
+
+        panic!("pancied outside of expression check, @test_ident_expr");
+    }
 }

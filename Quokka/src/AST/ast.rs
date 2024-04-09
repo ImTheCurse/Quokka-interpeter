@@ -1,7 +1,5 @@
 use std::fmt::{write, Display};
 
-use crate::TokenType;
-
 #[derive(Clone)]
 pub enum Expression {
     Identifier(Identifier),
@@ -12,6 +10,7 @@ pub enum Expression {
 pub enum Statment {
     Let(LetStatment),
     Return(ReturnStatment),
+    Expression(ExpressionStatment),
 }
 
 #[derive(Clone)]
@@ -42,7 +41,28 @@ pub struct ReturnStatment {
 
 #[derive(Clone)]
 pub struct ExpressionStatment {
-    expr: Expression,
+    pub expr: Expression,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum Infix {
+    Plus,
+    Minus,
+    Divide,
+    Multiply,
+    Equal,
+    NotEqual,
+    GreaterThanEqual,
+    GreaterThan,
+    LessThanEqual,
+    LessThan,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum Prefix {
+    Plus,
+    Minus,
+    Not,
 }
 
 impl Display for Identifier {
@@ -89,6 +109,7 @@ impl Display for Statment {
         return match self {
             Statment::Let(l) => write!(f, "{}", l.to_string()),
             Statment::Return(ret) => write!(f, "{}", ret.to_string()),
+            Statment::Expression(expr) => write!(f, "{}", expr.expr),
         };
     }
 }
