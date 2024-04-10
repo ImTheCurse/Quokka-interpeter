@@ -123,4 +123,44 @@ mod test {
 
         panic!("pancied outside of expression check, @test_ident_expr");
     }
+    #[test]
+    fn test_int_lit_expr() {
+        let input = "
+        5;
+        ";
+        let mut l = Lexer {
+            ch: '5',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::Int(num) = &expr_stmt {
+                if num.value != 5 {
+                    panic!("value != 5 , got:{} ", num.value);
+                }
+
+                if num.literal != "5" {
+                    panic!("literal is not 5, got: {}", num.literal);
+                }
+                return;
+            }
+            panic!("statment isn't expression. @test_int_lit_expr");
+        }
+
+        panic!("pancied outside of expression check, @test_int_lit_expr");
+    }
 }

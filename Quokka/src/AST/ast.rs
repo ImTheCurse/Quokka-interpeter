@@ -4,6 +4,7 @@ use std::fmt::Display;
 pub enum Expression {
     Identifier(Identifier),
     Literal(Literal),
+    Int(IntLiteral),
 }
 
 #[derive(Clone)]
@@ -21,6 +22,12 @@ pub struct Program {
 #[derive(Clone)]
 pub struct Literal {
     pub value: String,
+}
+
+#[derive(Clone)]
+pub struct IntLiteral {
+    pub value: i32,
+    pub literal: String,
 }
 
 #[derive(Clone)]
@@ -76,6 +83,7 @@ impl Display for Expression {
         match self {
             Expression::Literal(lit) => write!(f, "{}", lit.value),
             Expression::Identifier(ident) => write!(f, "{}", ident.value),
+            Expression::Int(num) => write!(f, "{}", num.value),
         }
     }
 }
