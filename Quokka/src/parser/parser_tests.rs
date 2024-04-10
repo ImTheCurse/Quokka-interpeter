@@ -153,9 +153,6 @@ mod test {
                     panic!("value != 5 , got:{} ", num.value);
                 }
 
-                if num.literal != "5" {
-                    panic!("literal is not 5, got: {}", num.literal);
-                }
                 return;
             }
             panic!("statment isn't expression. @test_int_lit_expr");

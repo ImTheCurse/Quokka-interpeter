@@ -27,7 +27,6 @@ pub struct Literal {
 #[derive(Clone)]
 pub struct IntLiteral {
     pub value: i32,
-    pub literal: String,
 }
 
 #[derive(Clone)]

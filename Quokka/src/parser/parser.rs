@@ -1,7 +1,7 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    Expression, ExpressionStatment, Identifier, LetStatment, Literal, Program, Statment,
+    Expression, Identifier, IntLiteral, LetStatment, Literal, Program, Statment,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
@@ -27,7 +27,7 @@ c_enum! {
     }
 }
 
-impl<'a> Parser {
+impl Parser {
     pub fn new(lex: Lexer) -> Parser {
         let tok = Token {
             literal: "".to_string(),
@@ -132,7 +132,8 @@ impl<'a> Parser {
     }
 
     fn parse_int(&mut self, num: i32) -> Option<Statment> {
-        todo!()
+        let expr = Expression::Int(IntLiteral { value: num });
+        Some(Statment::Expr(expr))
     }
 
     fn parse_ident(&mut self) -> Option<Statment> {
