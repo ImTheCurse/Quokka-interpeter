@@ -137,7 +137,6 @@ impl<'a> Parser {
 
     fn parse_ident(&mut self) -> Option<Statment> {
         let ident = self.curr_token.literal.clone();
-        self.next_token_parser();
         let expr = Expression::Identifier(Identifier {
             value: ident.to_string(),
         });
