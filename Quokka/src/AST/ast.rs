@@ -10,7 +10,7 @@ pub enum Expression {
 pub enum Statment {
     Let(LetStatment),
     Return(ReturnStatment),
-    Expression(ExpressionStatment),
+    Expr(Expression),
 }
 
 #[derive(Clone)]
@@ -109,7 +109,7 @@ impl Display for Statment {
         return match self {
             Statment::Let(l) => write!(f, "{}", l.to_string()),
             Statment::Return(ret) => write!(f, "{}", ret.to_string()),
-            Statment::Expression(expr) => write!(f, "{}", expr.expr),
+            Statment::Expr(expr) => write!(f, "{}", expr),
         };
     }
 }

@@ -111,8 +111,8 @@ mod test {
             );
         }
 
-        if let Statment::Expression(expr_stmt) = &program.unwrap().statments[0] {
-            if let Expression::Identifier(idtf) = &expr_stmt.expr {
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::Identifier(idtf) = &expr_stmt {
                 if idtf.value != "foobar" {
                     panic!("ident value not foobar, got:{} ", idtf.value);
                 }

@@ -105,13 +105,13 @@ impl<'a> Parser {
                 if self.next_token_is(&TokenType::Semicolon) {
                     self.next_token_parser();
                 }
-                Some(Statment::Expression(ExpressionStatment { expr: expr }))
+                Some(expr)
             }
             None => None,
         };
     }
 
-    fn parse_expr(&mut self, prec: Precedence) -> Option<Expression> {
+    fn parse_expr(&mut self, prec: Precedence) -> Option<Statment> {
         // prefix
         let mut lhs = match self.curr_token.tok_type {
             TokenType::Ident => self.parse_ident(),
@@ -119,11 +119,16 @@ impl<'a> Parser {
             _ => self.prefix_error(),
         };
 
+        return lhs;
+
         //infix
 
-        while !self.next_token_is(&TokenType::Semicolon) && prec < self.next_token_precedence() {
-            todo!()
-        }
+        /*
+             while !self.next_token_is(&TokenType::Semicolon) && prec < self.next_token_precedence() {
+
+
+            }
+        */
     }
 
     fn parse_int(&mut self, num: i32) -> Option<Statment> {
@@ -131,7 +136,12 @@ impl<'a> Parser {
     }
 
     fn parse_ident(&mut self) -> Option<Statment> {
-        todo!()
+        let ident = self.curr_token.literal.clone();
+        self.next_token_parser();
+        let expr = Expression::Identifier(Identifier {
+            value: ident.to_string(),
+        });
+        Some(Statment::Expr(expr))
     }
 
     fn prefix_error(&mut self) -> Option<Statment> {
