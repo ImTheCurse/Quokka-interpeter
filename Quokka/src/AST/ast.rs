@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::token::token::TokenType;
+
 #[derive(Clone)]
 pub enum Expression {
     Identifier(Identifier),
@@ -12,6 +14,7 @@ pub enum Statment {
     Let(LetStatment),
     Return(ReturnStatment),
     Expr(Expression),
+    PrefixExpr(PrefixExpression),
 }
 
 #[derive(Clone)]
@@ -50,6 +53,13 @@ pub struct ExpressionStatment {
     pub expr: Expression,
 }
 
+#[derive(Clone)]
+pub struct PrefixExpression {
+    pub tok_type: TokenType,
+    pub operator: String,
+    pub rhs: Expression,
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum Infix {
     Plus,
@@ -74,6 +84,12 @@ pub enum Prefix {
 impl Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
+    }
+}
+
+impl Display for PrefixExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.rhs.to_string())
     }
 }
 
@@ -117,6 +133,7 @@ impl Display for Statment {
             Statment::Let(l) => write!(f, "{}", l.to_string()),
             Statment::Return(ret) => write!(f, "{}", ret.to_string()),
             Statment::Expr(expr) => write!(f, "{}", expr),
+            Statment::PrefixExpr(p_expr) => write!(f, "{}", p_expr.to_string()),
         };
     }
 }

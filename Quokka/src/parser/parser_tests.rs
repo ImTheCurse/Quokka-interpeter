@@ -160,4 +160,72 @@ mod test {
 
         panic!("pancied outside of expression check, @test_int_lit_expr");
     }
+    #[test]
+    fn test_parse_prefix_expr() {
+        pub struct Pre<'a> {
+            pub input: &'a str,
+            pub op: &'a str,
+            pub int_value: i32,
+        }
+
+        let prefix_tests: Vec<Pre> = vec![
+            Pre {
+                input: "!5;",
+                op: "!",
+                int_value: 5,
+            },
+            Pre {
+                input: "-15",
+                op: "-",
+                int_value: 15,
+            },
+        ];
+
+        for t_case in prefix_tests.iter() {
+            let mut l = Lexer {
+                ch: '5',
+                input: t_case.input.to_string(),
+            };
+            let lex = Lexer::new(&mut l, t_case.input.to_string());
+            let mut prsr = Parser::new(lex);
+
+            let program = prsr.parse_program();
+            if program.is_none() {
+                panic!("Paniced @ parse_program() - no program exists.")
+            }
+            if program.clone().unwrap().statments.len() != 1 {
+                check_parser_errors(prsr.errors);
+                panic!(
+                    "program.statments does not contain 1 statments, got: {}",
+                    program.unwrap().statments.len()
+                );
+            }
+
+            if let Statment::PrefixExpr(prefix_expr) = &program.unwrap().statments[0] {
+                if prefix_expr.operator != t_case.op {
+                    panic!(
+                        "unexpected operator. expected: {}, got: {}",
+                        t_case.op, prefix_expr.operator
+                    );
+                }
+                test_int_lit(&prefix_expr.rhs, t_case.int_value);
+                return;
+            }
+
+            panic!("Expression isn't an Prefix Expression ");
+        }
+    }
+
+    fn test_int_lit(rhs: &Expression, value: i32) -> bool {
+        if let Expression::Int(num) = rhs {
+            if num.value != value {
+                panic!(
+                    "Unexpected integer value. expected: {}, got: {}",
+                    num.value, value
+                );
+            }
+            return true;
+        }
+        panic!("Expression isn't an int literal");
+    }
 }
