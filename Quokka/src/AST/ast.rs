@@ -7,6 +7,8 @@ pub enum Expression {
     Identifier(Identifier),
     Literal(Literal),
     Int(IntLiteral),
+    Prefix(Box<PrefixExpression>),
+    Blank,
 }
 
 #[derive(Clone)]
@@ -14,7 +16,6 @@ pub enum Statment {
     Let(LetStatment),
     Return(ReturnStatment),
     Expr(Expression),
-    PrefixExpr(PrefixExpression),
 }
 
 #[derive(Clone)]
@@ -99,6 +100,8 @@ impl Display for Expression {
             Expression::Literal(lit) => write!(f, "{}", lit.value),
             Expression::Identifier(ident) => write!(f, "{}", ident.value),
             Expression::Int(num) => write!(f, "{}", num.value),
+            Expression::Prefix(p_ex) => write!(f, "{}", p_ex.rhs),
+            Expression::Blank => write!(f, ""),
         }
     }
 }
@@ -133,7 +136,6 @@ impl Display for Statment {
             Statment::Let(l) => write!(f, "{}", l.to_string()),
             Statment::Return(ret) => write!(f, "{}", ret.to_string()),
             Statment::Expr(expr) => write!(f, "{}", expr),
-            Statment::PrefixExpr(p_expr) => write!(f, "{}", p_expr.to_string()),
         };
     }
 }

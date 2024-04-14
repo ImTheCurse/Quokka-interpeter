@@ -201,18 +201,21 @@ mod test {
                 );
             }
 
-            if let Statment::PrefixExpr(prefix_expr) = &program.unwrap().statments[0] {
-                if prefix_expr.operator != t_case.op {
-                    panic!(
-                        "unexpected operator. expected: {}, got: {}",
-                        t_case.op, prefix_expr.operator
-                    );
+            if let Statment::Expr(expr) = &program.unwrap().statments[0] {
+                match expr {
+                    Expression::Prefix(p_ex) => {
+                        if p_ex.operator != t_case.op {
+                            panic!(
+                                "unexpected operator. expected: {}, got: {}",
+                                t_case.op, p_ex.operator
+                            );
+                        }
+                        test_int_lit(&p_ex.rhs, t_case.int_value);
+                        return;
+                    }
+                    _ => panic!("Expression isn't an Prefix Expression "),
                 }
-                test_int_lit(&prefix_expr.rhs, t_case.int_value);
-                return;
             }
-
-            panic!("Expression isn't an Prefix Expression ");
         }
     }
 

@@ -1,7 +1,7 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    Expression, Identifier, IntLiteral, LetStatment, Literal, Program, Statment,
+    Expression, Identifier, IntLiteral, LetStatment, Literal, PrefixExpression, Program, Statment,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
@@ -22,6 +22,7 @@ c_enum! {
         LessGreater, //< or >
         Sum,         // + or -
         Product,     //*
+        Prefix,
         Call,        //func(x)
 
     }
@@ -105,21 +106,24 @@ impl Parser {
                 if self.next_token_is(&TokenType::Semicolon) {
                     self.next_token_parser();
                 }
-                Some(expr)
+                Some(Statment::Expr(expr))
             }
             None => None,
         };
     }
 
-    fn parse_expr(&mut self, prec: Precedence) -> Option<Statment> {
+    fn parse_expr(&mut self, prec: Precedence) -> Option<Expression> {
         // prefix
-        let mut lhs = match self.curr_token.tok_type {
+        let lhs = match self.curr_token.tok_type {
             TokenType::Ident => self.parse_ident(),
             TokenType::Int(num) => self.parse_int(num),
+            TokenType::Not => self.parse_prefix_expr(),
+            TokenType::Minus => self.parse_prefix_expr(),
+            TokenType::Plus => self.parse_prefix_expr(),
             _ => self.prefix_error(),
         };
 
-        return lhs;
+        return Some(lhs);
 
         //infix
 
@@ -131,20 +135,37 @@ impl Parser {
         */
     }
 
-    fn parse_int(&mut self, num: i32) -> Option<Statment> {
-        let expr = Expression::Int(IntLiteral { value: num });
-        Some(Statment::Expr(expr))
+    fn parse_prefix_expr(&mut self) -> Expression {
+        let current_expr = Expression::Literal(Literal {
+            value: "".to_string(),
+        });
+        let mut prefix_expr = PrefixExpression {
+            tok_type: self.curr_token.tok_type,
+            operator: self.curr_token.literal.clone(),
+            rhs: current_expr,
+        };
+
+        self.next_token_parser();
+        prefix_expr.rhs = self
+            .parse_expr(Precedence::Prefix)
+            .unwrap_or(Expression::Blank);
+        return Expression::Prefix(Box::new(prefix_expr));
     }
 
-    fn parse_ident(&mut self) -> Option<Statment> {
+    fn parse_int(&mut self, num: i32) -> Expression {
+        let expr = Expression::Int(IntLiteral { value: num });
+        expr
+    }
+
+    fn parse_ident(&mut self) -> Expression {
         let ident = self.curr_token.literal.clone();
         let expr = Expression::Identifier(Identifier {
             value: ident.to_string(),
         });
-        Some(Statment::Expr(expr))
+        expr
     }
 
-    fn prefix_error(&mut self) -> Option<Statment> {
+    fn prefix_error(&mut self) -> Expression {
         todo!()
     }
 
