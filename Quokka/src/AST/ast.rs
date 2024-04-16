@@ -109,13 +109,13 @@ impl Display for Expression {
             Expression::Identifier(ident) => write!(f, "{}", ident.value),
             Expression::Int(num) => write!(f, "{}", num.value),
             Expression::Prefix(p_ex) => {
-                write!(f, "{}", p_ex.operator);
-                write!(f, "{}", p_ex.rhs)
+                write!(f, "({}", p_ex.operator);
+                write!(f, "{})", p_ex.rhs)
             }
             Expression::Infix(i_ex) => {
-                write!(f, "{}", i_ex.lhs);
-                write!(f, "{}", i_ex.operator);
-                write!(f, "{}", i_ex.rhs)
+                write!(f, "({}", i_ex.lhs);
+                write!(f, " {} ", i_ex.operator);
+                write!(f, "{})", i_ex.rhs)
             }
             Expression::Blank => write!(f, ""),
         }

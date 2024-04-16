@@ -329,4 +329,82 @@ mod test {
         }
         panic!("Expression isn't an int literal");
     }
+
+    #[test]
+    fn test_op_precedence_parse() {
+        struct Tst<'a> {
+            inp: &'a str,
+            expected: &'a str,
+        }
+
+        let tests = vec![
+            Tst {
+                inp: "-a * b",
+                expected: "((-a) * b)",
+            },
+            Tst {
+                inp: "!-a",
+                expected: "(!(-a))",
+            },
+            Tst {
+              inp: "a + b + c",
+            expected: "((a + b) + c)",
+            },
+            Tst {
+                inp: "a * b * c",
+                expected: "((a * b) * c)",
+            },
+            Tst {
+                inp: "a * b / c",
+                expected: "((a * b) / c)",
+            },
+            Tst {
+                inp: "a + b / c",
+                expected: "(a + (b / c))",
+            },
+            Tst {
+                inp: "a + b - c",
+                expected: "((a + b) - c)",
+            },
+            Tst {
+                inp: "a + b * c + d / e - f",
+                expected: "(((a + (b * c)) + (d / e)) - f)",
+            },
+            Tst {
+                inp: "3 + 4; -5 * 5",
+                expected: "(3 + 4)((-5) * 5)",
+            },
+            Tst {
+                inp: "5 > 4 == 3 < 4",
+                expected: "((5 > 4) == (3 < 4))",
+            },
+            Tst {
+                inp: "5 < 4 != 3 > 4",
+                expected: "((5 < 4) != (3 > 4))",
+            },
+            Tst {
+                inp: "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            },
+        ];
+
+        for t_case in &tests {
+            let mut l = Lexer {
+                ch: t_case.inp.chars().next().unwrap(),
+                input: t_case.inp.to_string(),
+            };
+            let lex = Lexer::new(&mut l, t_case.inp.to_string());
+            let mut prsr = Parser::new(lex);
+            let program = prsr.parse_program();
+            if program.is_none() {
+                panic!("Paniced @ parse_program() - no program exists.")
+            }
+            check_parser_errors(prsr.errors);
+
+            let actual = program.unwrap().to_string();
+            if actual != t_case.expected {
+                panic!("Expected: {}, got: {}", t_case.expected, actual);
+            }
+        }
+    }
 }

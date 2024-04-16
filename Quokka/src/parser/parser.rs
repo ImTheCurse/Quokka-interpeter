@@ -141,7 +141,7 @@ impl Parser {
                 }
                 _ => return Some(lhs),
             };
-            return Some(lhs);
+            
         }
         Some(lhs)
     }
