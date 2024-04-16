@@ -44,7 +44,8 @@ fn split_special_chars(inp: &str) -> String {
     s = s.replace('*', " * ");
     s = s.replace('/', " / ");
     s = s.replace('<', " < ");
-    s = s.replace('>', ">");
+    s = s.replace('>', " > ");
+    s = s.replace('!', " ! ");
     return s;
 }
 
@@ -130,11 +131,14 @@ impl Lexer {
             _ => {
                 //Check for != or !IDENT
                 if self.ch == '!' {
-                    if peek_char == '=' {
-                        let mut temp: String = String::from(first_token);
-                        temp.remove(0);
-                        temp.remove(0);
-                        self.input = insert_str_at_start(&self.input, &temp);
+                    let mut eq = binding.chars();
+                    eq.next();
+                    eq.next();
+                    eq.next();
+
+                    if eq.next().unwrap_or('~') == '=' {
+                        self.input = consume_white_space(&self.input);
+                        self.input = consume_first_word(&self.input);
                         return Token {
                             tok_type: TokenType::NotEQ,
                             literal: "!=".to_string(),

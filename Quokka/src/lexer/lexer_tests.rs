@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-
     use crate::lexer::lexer::*;
     use crate::token;
     use token::token::TokenType;

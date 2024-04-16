@@ -1,6 +1,10 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
-use crate::AST::ast::{Expression, Identifier, LetStatment, Literal, Program, Statment};
+use crate::AST::ast::{
+    Expression, Identifier, Infix, InfixExpression, IntLiteral, LetStatment, Literal,
+    PrefixExpression, Program, Statment,
+};
+use c_enum::c_enum;
 use std::fmt::Write;
 
 #[derive(Clone)]
@@ -11,9 +15,23 @@ pub struct Parser {
     pub errors: Vec<String>,
 }
 
-impl<'a> Parser {
+c_enum! {
+#[derive(PartialEq,PartialOrd, Clone, Copy, Eq)]
+    pub enum Precedence :i32 {
+        Lowest = 1,
+        Equals,      //==
+        LessGreater, //< or >
+        Sum,         // + or -
+        Product,     //*
+        Prefix,
+        Call,        //func(x)
+
+    }
+}
+
+impl Parser {
     pub fn new(lex: Lexer) -> Parser {
-        let mut tok = Token {
+        let tok = Token {
             literal: "".to_string(),
             tok_type: TokenType::EOF,
         };
@@ -27,6 +45,29 @@ impl<'a> Parser {
         p.next_token_parser();
 
         p
+    }
+
+    fn curr_token_is(&self, tok: &TokenType) -> bool {
+        self.curr_token.tok_type == *tok
+    }
+
+    fn token_to_precedence(tok: &TokenType) -> Precedence {
+        match *tok {
+            TokenType::EQ | TokenType::NotEQ => Precedence::Equals,
+            TokenType::Rarrow | TokenType::Larrow => Precedence::LessGreater,
+            TokenType::Plus | TokenType::Minus => Precedence::Sum,
+            TokenType::Asterisk | TokenType::Fslash => Precedence::Product,
+            TokenType::Lparen => Precedence::Call,
+            _ => Precedence::Lowest,
+        }
+    }
+
+    fn next_token_precedence(&mut self) -> Precedence {
+        Self::token_to_precedence(&self.peek_token.tok_type)
+    }
+
+    fn next_token_is(&self, tok: &TokenType) -> bool {
+        self.peek_token.tok_type == *tok
     }
 
     pub fn next_token_parser(&mut self) {
@@ -52,8 +93,102 @@ impl<'a> Parser {
     pub fn parse_statment(&mut self, curr_tok: Token) -> Option<Statment> {
         return match curr_tok.tok_type {
             TokenType::Let => self.parse_let_statment(),
+            TokenType::Return => self.parse_return_statments(),
+            TokenType::Illegal => None,
+            _ => self.parse_expr_statments(),
+
             _ => None,
         };
+    }
+
+    fn parse_expr_statments(&mut self) -> Option<Statment> {
+        return match self.parse_expr(Precedence::Lowest) {
+            Some(expr) => {
+                if self.next_token_is(&TokenType::Semicolon) {
+                    self.next_token_parser();
+                }
+                Some(Statment::Expr(expr))
+            }
+            None => None,
+        };
+    }
+
+    fn parse_expr(&mut self, prec: Precedence) -> Option<Expression> {
+        // prefix
+        let mut lhs = match self.curr_token.tok_type {
+            TokenType::Ident => self.parse_ident(),
+            TokenType::Int(num) => self.parse_int(num),
+            TokenType::Not => self.parse_prefix_expr(),
+            TokenType::Minus => self.parse_prefix_expr(),
+            TokenType::Plus => self.parse_prefix_expr(),
+            _ => self.prefix_error(),
+        };
+
+        //infix
+
+        while !self.next_token_is(&TokenType::Semicolon) && prec < self.next_token_precedence() {
+            match self.peek_token.tok_type {
+                TokenType::Plus
+                | TokenType::Minus
+                | TokenType::Fslash
+                | TokenType::Asterisk
+                | TokenType::EQ
+                | TokenType::NotEQ
+                | TokenType::Larrow
+                | TokenType::Rarrow => {
+                    self.next_token_parser();
+                    lhs = self.parse_infix_expr(&lhs);
+                }
+                _ => return Some(lhs),
+            };
+            
+        }
+        Some(lhs)
+    }
+    fn parse_infix_expr(&mut self, left: &Expression) -> Expression {
+        let curr_expr = Expression::Blank;
+        let mut infix = InfixExpression {
+            tok_type: self.curr_token.tok_type,
+            operator: self.curr_token.literal.clone(),
+            lhs: left.clone(),
+            rhs: curr_expr,
+        };
+        let prec = Self::token_to_precedence(&self.curr_token.tok_type);
+        self.next_token_parser();
+        infix.rhs = self.parse_expr(prec).unwrap_or(Expression::Blank);
+        Expression::Infix(Box::new(infix))
+    }
+
+    fn parse_prefix_expr(&mut self) -> Expression {
+        let current_expr = Expression::Blank;
+        let mut prefix_expr = PrefixExpression {
+            tok_type: self.curr_token.tok_type,
+            operator: self.curr_token.literal.clone(),
+            rhs: current_expr,
+        };
+
+        self.next_token_parser();
+        prefix_expr.rhs = self
+            .parse_expr(Precedence::Prefix)
+            .unwrap_or(Expression::Blank);
+        return Expression::Prefix(Box::new(prefix_expr));
+    }
+
+    fn parse_int(&mut self, num: i32) -> Expression {
+        let expr = Expression::Int(IntLiteral { value: num });
+        expr
+    }
+
+    fn parse_ident(&mut self) -> Expression {
+        let ident = self.curr_token.literal.clone();
+        let expr = Expression::Identifier(Identifier {
+            value: ident.to_string(),
+        });
+        expr
+    }
+
+    fn prefix_error(&mut self) -> Expression {
+        todo!()
     }
 
     fn parse_let_statment(&mut self) -> Option<Statment> {
@@ -113,5 +248,9 @@ impl<'a> Parser {
             tok, self.peek_token.tok_type
         );
         self.errors.push(message);
+    }
+
+    pub fn parse_return_statments(&mut self) -> Option<Statment> {
+        todo!()
     }
 }
