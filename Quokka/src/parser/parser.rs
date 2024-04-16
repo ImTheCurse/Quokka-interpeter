@@ -16,7 +16,7 @@ pub struct Parser {
 }
 
 c_enum! {
-#[derive(PartialEq, Clone, Copy, Eq)]
+#[derive(PartialEq,PartialOrd, Clone, Copy, Eq)]
     pub enum Precedence :i32 {
         Lowest = 1,
         Equals,      //==
@@ -115,7 +115,7 @@ impl Parser {
 
     fn parse_expr(&mut self, prec: Precedence) -> Option<Expression> {
         // prefix
-        let lhs = match self.curr_token.tok_type {
+        let mut lhs = match self.curr_token.tok_type {
             TokenType::Ident => self.parse_ident(),
             TokenType::Int(num) => self.parse_int(num),
             TokenType::Not => self.parse_prefix_expr(),
@@ -124,16 +124,26 @@ impl Parser {
             _ => self.prefix_error(),
         };
 
-        return Some(lhs);
-
         //infix
 
-        /*
-             while !self.next_token_is(&TokenType::Semicolon) && prec < self.next_token_precedence() {
-
-
-            }
-        */
+        while !self.next_token_is(&TokenType::Semicolon) && prec < self.next_token_precedence() {
+            match self.peek_token.tok_type {
+                TokenType::Plus
+                | TokenType::Minus
+                | TokenType::Fslash
+                | TokenType::Asterisk
+                | TokenType::EQ
+                | TokenType::NotEQ
+                | TokenType::Larrow
+                | TokenType::Rarrow => {
+                    self.next_token_parser();
+                    lhs = self.parse_infix_expr(&lhs);
+                }
+                _ => return Some(lhs),
+            };
+            return Some(lhs);
+        }
+        Some(lhs)
     }
     fn parse_infix_expr(&mut self, left: &Expression) -> Expression {
         let curr_expr = Expression::Blank;
