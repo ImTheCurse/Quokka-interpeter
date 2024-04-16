@@ -8,6 +8,7 @@ pub enum Expression {
     Literal(Literal),
     Int(IntLiteral),
     Prefix(Box<PrefixExpression>),
+    Infix(Box<InfixExpression>),
     Blank,
 }
 
@@ -60,6 +61,13 @@ pub struct PrefixExpression {
     pub operator: String,
     pub rhs: Expression,
 }
+#[derive(Clone)]
+pub struct InfixExpression {
+    pub tok_type: TokenType,
+    pub lhs: Expression,
+    pub operator: String,
+    pub rhs: Expression,
+}
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Infix {
@@ -100,7 +108,15 @@ impl Display for Expression {
             Expression::Literal(lit) => write!(f, "{}", lit.value),
             Expression::Identifier(ident) => write!(f, "{}", ident.value),
             Expression::Int(num) => write!(f, "{}", num.value),
-            Expression::Prefix(p_ex) => write!(f, "{}", p_ex.rhs),
+            Expression::Prefix(p_ex) => {
+                write!(f, "{}", p_ex.operator);
+                write!(f, "{}", p_ex.rhs)
+            }
+            Expression::Infix(i_ex) => {
+                write!(f, "{}", i_ex.lhs);
+                write!(f, "{}", i_ex.operator);
+                write!(f, "{}", i_ex.rhs)
+            }
             Expression::Blank => write!(f, ""),
         }
     }

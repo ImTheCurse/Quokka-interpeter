@@ -218,9 +218,107 @@ mod test {
             }
         }
     }
+    #[test]
+    fn test_infix_expr() {
+        struct Infix<'a> {
+            input: &'a str,
+            lhs: i32,
+            op: &'a str,
+            rhs: i32,
+        }
 
-    fn test_int_lit(rhs: &Expression, value: i32) -> bool {
-        if let Expression::Int(num) = rhs {
+        let infix_tests = vec![
+            Infix {
+                input: "5 + 5;",
+                lhs: 5,
+                op: "+",
+                rhs: 5,
+            },
+            Infix {
+                input: "5 - 5;",
+                lhs: 5,
+                op: "-",
+                rhs: 5,
+            },
+            Infix {
+                input: "5 * 5;",
+                lhs: 5,
+                op: "*",
+                rhs: 5,
+            },
+            Infix {
+                input: "5 / 5;",
+                lhs: 5,
+                op: "/",
+                rhs: 5,
+            },
+            Infix {
+                input: "5 > 5;",
+                lhs: 5,
+                op: ">",
+                rhs: 5,
+            },
+            Infix {
+                input: "5 < 5;",
+                lhs: 5,
+                op: "<",
+                rhs: 5,
+            },
+            Infix {
+                input: "5 == 5;",
+                lhs: 5,
+                op: "==",
+                rhs: 5,
+            },
+            Infix {
+                input: "5 != 5;",
+                lhs: 5,
+                op: "!=",
+                rhs: 5,
+            },
+        ];
+        for t_case in &infix_tests {
+            let mut l = Lexer {
+                ch: '5',
+                input: t_case.input.to_string(),
+            };
+            let lex = Lexer::new(&mut l, t_case.input.to_string());
+            let mut prsr = Parser::new(lex);
+            let program = prsr.parse_program();
+            if program.is_none() {
+                panic!("Paniced @ parse_program() - no program exists.")
+            }
+            if program.clone().unwrap().statments.len() != 1 {
+                check_parser_errors(prsr.errors);
+                panic!(
+                    "program.statments does not contain 1 statments, got: {}",
+                    program.unwrap().statments.len()
+                );
+            }
+
+            if let Statment::Expr(expr) = &program.unwrap().statments[0] {
+                match expr {
+                    Expression::Infix(infix) => {
+                        if infix.operator != t_case.op {
+                            panic!(
+                                "unexpected operator. expected: {}, got: {}",
+                                t_case.op, infix.operator
+                            );
+                        }
+                        test_int_lit(&infix.lhs, t_case.lhs);
+                        test_int_lit(&infix.rhs, t_case.rhs);
+                        return;
+                    }
+                    _ => panic!("Expression isn't an infix Expression "),
+                }
+            }
+
+            panic!("pancied outside of expression check, @test_infix_expr");
+        }
+    }
+
+    fn test_int_lit(expr: &Expression, value: i32) -> bool {
+        if let Expression::Int(num) = expr {
             if num.value != value {
                 panic!(
                     "Unexpected integer value. expected: {}, got: {}",
