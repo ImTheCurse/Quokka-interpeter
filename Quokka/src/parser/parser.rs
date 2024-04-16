@@ -1,7 +1,8 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    Expression, Identifier, IntLiteral, LetStatment, Literal, PrefixExpression, Program, Statment,
+    Expression, Identifier, Infix, InfixExpression, IntLiteral, LetStatment, Literal,
+    PrefixExpression, Program, Statment,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
@@ -134,11 +135,22 @@ impl Parser {
             }
         */
     }
+    fn parse_infix_expr(&mut self, left: &Expression) -> Expression {
+        let curr_expr = Expression::Blank;
+        let mut infix = InfixExpression {
+            tok_type: self.curr_token.tok_type,
+            operator: self.curr_token.literal.clone(),
+            lhs: left.clone(),
+            rhs: curr_expr,
+        };
+        let prec = Self::token_to_precedence(&self.curr_token.tok_type);
+        self.next_token_parser();
+        infix.rhs = self.parse_expr(prec).unwrap_or(Expression::Blank);
+        Expression::Infix(Box::new(infix))
+    }
 
     fn parse_prefix_expr(&mut self) -> Expression {
-        let current_expr = Expression::Literal(Literal {
-            value: "".to_string(),
-        });
+        let current_expr = Expression::Blank;
         let mut prefix_expr = PrefixExpression {
             tok_type: self.curr_token.tok_type,
             operator: self.curr_token.literal.clone(),
