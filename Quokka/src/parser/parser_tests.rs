@@ -2,7 +2,9 @@
 mod test {
     use crate::lexer::lexer::*;
     use crate::parser::parser::Parser;
-    use crate::AST::ast::{Expression, Statment};
+    use crate::AST::ast::{Expression, Identifier, Statment};
+    use core::panic;
+    use std::borrow::Borrow;
     use std::panic;
 
     #[test]
@@ -330,6 +332,18 @@ mod test {
         panic!("Expression isn't an int literal");
     }
 
+    fn test_ident(expr: &Expression, val: &str) -> bool {
+        let ident = match expr {
+            Expression::Identifier(i) => *i,
+            _ => panic!("expression isn't identifier."),
+        };
+
+        if ident.value != val {
+            panic!("ident.value not {}. got {}", val, ident.value);
+        }
+        return true;
+    }
+
     #[test]
     fn test_op_precedence_parse() {
         struct Tst<'a> {
@@ -347,8 +361,8 @@ mod test {
                 expected: "(!(-a))",
             },
             Tst {
-              inp: "a + b + c",
-            expected: "((a + b) + c)",
+                inp: "a + b + c",
+                expected: "((a + b) + c)",
             },
             Tst {
                 inp: "a * b * c",
