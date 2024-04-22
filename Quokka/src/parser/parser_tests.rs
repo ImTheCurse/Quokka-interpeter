@@ -4,7 +4,47 @@ mod test {
     use crate::parser::parser::Parser;
     use crate::token::token::TokenType;
     use crate::AST::ast::{Expression, Identifier, Statment};
+    use castaway::cast;
     use std::panic;
+
+    trait Matchable {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable + 'static;
+    }
+
+    impl Matchable for i32 {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable + 'static,
+        {
+            let x = cast!(expected, i32);
+            test_int_lit(expr, x.unwrap_or(0));
+        }
+    }
+
+    impl Matchable for &str {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable + 'static,
+        {
+            let x = cast!(expected, &str);
+            test_ident(expr, x.unwrap_or(""));
+        }
+    }
+
+    impl Matchable for bool {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable,
+        {
+            let x = cast!(expected, bool);
+            if x.is_err() {
+                panic!("Expected isn't a boolen type. @Matchable - callback()");
+            }
+            test_bool_helper(expr, x.unwrap_or(true));
+        }
+    }
 
     #[test]
     fn test_let_statments() {
@@ -266,61 +306,83 @@ mod test {
     }
     #[test]
     fn test_infix_expr() {
+        enum Dtype {
+            Int(i32),
+            Bool(bool),
+        }
         struct Infix<'a> {
             input: &'a str,
-            lhs: i32,
+            lhs: Dtype,
             op: &'a str,
-            rhs: i32,
+            rhs: Dtype,
         }
 
         let infix_tests = vec![
             Infix {
                 input: "5 + 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "+",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 - 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "-",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 * 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "*",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 / 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "/",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 > 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: ">",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 < 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "<",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 == 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "==",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 != 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "!=",
-                rhs: 5,
+                rhs: Dtype::Int(5),
+            },
+            Infix {
+                input: "true == true",
+                lhs: Dtype::Bool(true),
+                op: "==",
+                rhs: Dtype::Bool(true),
+            },
+            Infix {
+                input: "true != false",
+                lhs: Dtype::Bool(true),
+                op: "!=",
+                rhs: Dtype::Bool(false),
+            },
+            Infix {
+                input: "false == false",
+                lhs: Dtype::Bool(true),
+                op: "==",
+                rhs: Dtype::Bool(false),
             },
         ];
         for t_case in &infix_tests {
@@ -351,8 +413,21 @@ mod test {
                                 t_case.op, infix.operator
                             );
                         }
-                        test_int_lit(&infix.lhs, t_case.lhs);
-                        test_int_lit(&infix.rhs, t_case.rhs);
+
+                        if let Dtype::Bool(lhs) = t_case.lhs {
+                            if let Dtype::Bool(rhs) = t_case.rhs {
+                                test_infix_helper(expr, lhs, t_case.op, rhs)
+                            }
+                        }
+
+                        if let Dtype::Int(lhs) = t_case.lhs {
+                            if let Dtype::Int(rhs) = t_case.rhs {
+                                test_infix_helper(expr, lhs, t_case.op, rhs)
+                            }
+                        }
+
+                        // test_int_lit(&infix.lhs, t_case.lhs);
+                        // test_int_lit(&infix.rhs, t_case.rhs);
                         return;
                     }
                     _ => panic!("Expression isn't an infix Expression "),
@@ -386,6 +461,43 @@ mod test {
             panic!("ident.value not {}. got {}", val, ident.value);
         }
         return true;
+    }
+
+    fn test_bool_helper(expr: &Expression, value: bool) {
+        if let Expression::BoolenExpr(bool_expr) = expr {
+            if bool_expr.value != value {
+                panic!(
+                    "Boolen expression is incorrect, Expected: {},Got: {}",
+                    value, bool_expr.value
+                );
+            }
+            return;
+        }
+        panic!("Expression isn't Boolen.");
+    }
+
+    fn test_lit_expr<T>(expr: &Expression, expected: T)
+    where
+        T: Matchable + 'static,
+    {
+        T::callback(expr, expected)
+    }
+    fn test_infix_helper<T>(expr: &Expression, lhs: T, op: &str, rhs: T)
+    where
+        T: Matchable + 'static,
+    {
+        if let Expression::Infix(inf) = expr {
+            if inf.operator != op {
+                panic!(
+                    "infix operator is not correct. Expected: {}, Got: {}",
+                    op, inf.operator
+                );
+            }
+            test_lit_expr(&inf.lhs, lhs);
+            test_lit_expr(&inf.rhs, rhs);
+            return;
+        }
+        panic!("Expression is not Infix.");
     }
 
     #[test]
@@ -443,6 +555,22 @@ mod test {
             Tst {
                 inp: "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            },
+            Tst {
+                inp: "3 < 5 == true",
+                expected: "((3 < 5) == true)",
+            },
+            Tst {
+                inp: "3 > 5 == false",
+                expected: "((3 > 5) == false)",
+            },
+            Tst {
+                inp: "true",
+                expected: "true",
+            },
+            Tst {
+                inp: "false",
+                expected: "false",
             },
         ];
 

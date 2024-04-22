@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 lazy_static = "1.4.0"
 c-enum = "0.2.3"
+castaway = "0.2.2"
