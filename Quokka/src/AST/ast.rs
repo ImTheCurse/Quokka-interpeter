@@ -9,6 +9,7 @@ pub enum Expression {
     Int(IntLiteral),
     Prefix(Box<PrefixExpression>),
     Infix(Box<InfixExpression>),
+    BoolenExpr(Boolen),
     Blank,
 }
 
@@ -32,6 +33,12 @@ pub struct Literal {
 #[derive(Clone)]
 pub struct IntLiteral {
     pub value: i32,
+}
+
+#[derive(Clone)]
+pub struct Boolen {
+    pub value: bool,
+    pub tok_type: TokenType,
 }
 
 #[derive(Clone)]
@@ -118,6 +125,7 @@ impl Display for Expression {
                 write!(f, "{})", i_ex.rhs)
             }
             Expression::Blank => write!(f, ""),
+            Expression::BoolenExpr(bool) => write!(f, "{}", bool.value),
         }
     }
 }

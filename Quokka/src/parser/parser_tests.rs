@@ -2,9 +2,8 @@
 mod test {
     use crate::lexer::lexer::*;
     use crate::parser::parser::Parser;
+    use crate::token::token::TokenType;
     use crate::AST::ast::{Expression, Identifier, Statment};
-    use core::panic;
-    use std::borrow::Borrow;
     use std::panic;
 
     #[test]
@@ -125,6 +124,51 @@ mod test {
 
         panic!("pancied outside of expression check, @test_ident_expr");
     }
+
+    #[test]
+    fn test_bool_expr() {
+        let input = "true;";
+        let mut l = Lexer {
+            ch: 't',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::BoolenExpr(bool_expr) = &expr_stmt {
+                if bool_expr.value != true {
+                    panic!(
+                        "Boolen expresion isn't correct, expected: {}, got: {}",
+                        true, bool_expr.value
+                    );
+                }
+                if bool_expr.tok_type != TokenType::True {
+                    panic!(
+                        "TokenType isn't correct, expected: {}, got: {}",
+                        TokenType::True,
+                        bool_expr.tok_type
+                    );
+                }
+                return;
+            }
+            panic!("Expression isn't Boolen expresion");
+        }
+        panic!("Statment isn't an expression.");
+    }
+
     #[test]
     fn test_int_lit_expr() {
         let input = "
@@ -334,7 +378,7 @@ mod test {
 
     fn test_ident(expr: &Expression, val: &str) -> bool {
         let ident = match expr {
-            Expression::Identifier(i) => *i,
+            Expression::Identifier(i) => i,
             _ => panic!("expression isn't identifier."),
         };
 

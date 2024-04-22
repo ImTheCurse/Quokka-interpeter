@@ -1,7 +1,7 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    Expression, Identifier, Infix, InfixExpression, IntLiteral, LetStatment, Literal,
+    Boolen, Expression, Identifier, Infix, InfixExpression, IntLiteral, LetStatment, Literal,
     PrefixExpression, Program, Statment,
 };
 use c_enum::c_enum;
@@ -113,6 +113,18 @@ impl Parser {
         };
     }
 
+    fn parse_bool_expr(&mut self) -> Expression {
+        let bol = Boolen {
+            tok_type: if self.curr_token_is(&TokenType::True) {
+                TokenType::True
+            } else {
+                TokenType::False
+            },
+            value: self.curr_token_is(&TokenType::True),
+        };
+        Expression::BoolenExpr(bol)
+    }
+
     fn parse_expr(&mut self, prec: Precedence) -> Option<Expression> {
         // prefix
         let mut lhs = match self.curr_token.tok_type {
@@ -121,6 +133,7 @@ impl Parser {
             TokenType::Not => self.parse_prefix_expr(),
             TokenType::Minus => self.parse_prefix_expr(),
             TokenType::Plus => self.parse_prefix_expr(),
+            TokenType::True | TokenType::False => self.parse_bool_expr(),
             _ => self.prefix_error(),
         };
 
@@ -141,7 +154,6 @@ impl Parser {
                 }
                 _ => return Some(lhs),
             };
-            
         }
         Some(lhs)
     }
@@ -188,7 +200,10 @@ impl Parser {
     }
 
     fn prefix_error(&mut self) -> Expression {
-        todo!()
+        panic!(
+            "Prefix is incorrect, no prefix function to parse current prefix. got: {}",
+            self.curr_token.literal
+        );
     }
 
     fn parse_let_statment(&mut self) -> Option<Statment> {
