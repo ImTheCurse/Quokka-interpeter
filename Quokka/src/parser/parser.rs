@@ -1,8 +1,8 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    Boolen, Expression, Identifier, Infix, InfixExpression, IntLiteral, LetStatment, Literal,
-    PrefixExpression, Program, Statment,
+    BlockStatment, Boolen, Expression, Identifier, IfStatment, Infix, InfixExpression, IntLiteral,
+    LetStatment, Literal, PrefixExpression, Program, Statment,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
@@ -135,6 +135,7 @@ impl Parser {
             TokenType::Plus => self.parse_prefix_expr(),
             TokenType::True | TokenType::False => self.parse_bool_expr(),
             TokenType::Lparen => self.parse_grouped_expr(),
+            TokenType::If => self.parse_if_expr()?,
             _ => self.prefix_error(),
         };
 
@@ -157,6 +158,57 @@ impl Parser {
             };
         }
         Some(lhs)
+    }
+
+    fn parse_if_expr(&mut self) -> Option<Expression> {
+        let consq_block = BlockStatment { stmts: Vec::new() };
+
+        let mut expr = IfStatment {
+            condition: Expression::Blank,
+            consequence: consq_block,
+            alternative: None,
+        };
+        if self.peek_token.tok_type != TokenType::Lparen {
+            return None;
+        }
+        self.next_token_parser();
+        self.next_token_parser();
+        expr.condition = self.parse_expr(Precedence::Lowest)?;
+        if self.peek_token.tok_type != TokenType::Rparen {
+            return None;
+        }
+        self.next_token_parser();
+        if self.peek_token.tok_type != TokenType::Lbrack {
+            return None;
+        }
+        self.next_token_parser();
+        expr.consequence = *self.parse_block_statment();
+
+        if self.next_token_is(&TokenType::Else) {
+            self.next_token_parser();
+            if self.peek_token.tok_type != TokenType::Lbrack {
+                return None;
+            }
+            self.next_token_parser();
+            expr.alternative = Some(*self.parse_block_statment());
+        }
+
+        return Some(Expression::If(Box::new(expr)));
+    }
+
+    fn parse_block_statment(&mut self) -> Box<BlockStatment> {
+        let mut block = BlockStatment { stmts: Vec::new() };
+        self.next_token_parser();
+        while !self.curr_token_is(&TokenType::Rbrack) && !self.curr_token_is(&TokenType::EOF) {
+            let stmt = self.parse_statment(self.curr_token.clone());
+            if stmt.is_some() {
+                block
+                    .stmts
+                    .push(stmt.unwrap_or(Statment::Expr(Expression::Blank)));
+            }
+            self.next_token_parser();
+        }
+        return Box::new(block);
     }
 
     fn parse_grouped_expr(&mut self) -> Expression {
