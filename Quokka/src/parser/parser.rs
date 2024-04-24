@@ -1,8 +1,8 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    BlockStatment, Boolen, Expression, Identifier, IfStatment, Infix, InfixExpression, IntLiteral,
-    LetStatment, Literal, PrefixExpression, Program, Statment,
+    BlockStatment, Boolen, Expression, FunctionLiteral, Identifier, IfStatment, Infix,
+    InfixExpression, IntLiteral, LetStatment, Literal, PrefixExpression, Program, Statment,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
@@ -136,6 +136,7 @@ impl Parser {
             TokenType::True | TokenType::False => self.parse_bool_expr(),
             TokenType::Lparen => self.parse_grouped_expr(),
             TokenType::If => self.parse_if_expr()?,
+            TokenType::Function => self.parse_func_literal()?,
             _ => self.prefix_error(),
         };
 
@@ -158,6 +159,52 @@ impl Parser {
             };
         }
         Some(lhs)
+    }
+
+    fn parse_func_literal(&mut self) -> Option<Expression> {
+        let mut lit = FunctionLiteral {
+            params: Vec::new(),
+            body: BlockStatment { stmts: Vec::new() },
+        };
+        if !self.next_token_is(&TokenType::Lparen) {
+            return None;
+        }
+        self.next_token_parser();
+        lit.params = self.parse_func_param().unwrap_or(Vec::new());
+
+        if !self.next_token_is(&TokenType::Lbrack) {
+            return None;
+        }
+        self.next_token_parser();
+        lit.body = *self.parse_block_statment();
+        return Some(Expression::Func(lit));
+    }
+
+    fn parse_func_param(&mut self) -> Option<Vec<Identifier>> {
+        let mut identifiers = Vec::new();
+        if self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+            return None;
+        }
+        self.next_token_parser();
+        let ident = Identifier {
+            value: self.curr_token.literal.clone(),
+        };
+        identifiers.push(ident);
+
+        while self.next_token_is(&TokenType::Comma) {
+            self.next_token_parser();
+            self.next_token_parser();
+            let ident = Identifier {
+                value: self.curr_token.literal.clone(),
+            };
+            identifiers.push(ident);
+        }
+        if !self.next_token_is(&TokenType::Rparen) {
+            return None;
+        }
+        self.next_token_parser();
+        return Some(identifiers);
     }
 
     fn parse_if_expr(&mut self) -> Option<Expression> {

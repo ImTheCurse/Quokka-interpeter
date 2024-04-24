@@ -396,6 +396,61 @@ mod test {
     }
 
     #[test]
+    fn test_func_param_parse() {
+        struct Test<'a> {
+            inp: &'a str,
+            expected_params: Vec<&'a str>,
+        }
+        let tests = vec![
+            Test {
+                inp: "fn() {};",
+                expected_params: vec![],
+            },
+            Test {
+                inp: "fn(x) {};",
+                expected_params: vec!["x"],
+            },
+            Test {
+                inp: "fn(x, y, z) {};",
+                expected_params: vec!["x", "y", "z"],
+            },
+        ];
+
+        for t_case in &tests {
+            let mut l = Lexer {
+                ch: '5',
+                input: t_case.inp.to_string(),
+            };
+            let lex = Lexer::new(&mut l, t_case.inp.to_string());
+            let mut prsr = Parser::new(lex);
+
+            let program = prsr.parse_program();
+            if program.is_none() {
+                panic!("Paniced @ parse_program() - no program exists.")
+            }
+
+            if let Statment::Expr(expr) = &program.unwrap().statments[0] {
+                if let Expression::Func(f) = expr {
+                    if f.params.len() != t_case.expected_params.len() {
+                        panic!(
+                            "Unexpected number of paramaters, Expected: {}, Got: {}",
+                            t_case.expected_params.len(),
+                            f.params.len()
+                        );
+                    }
+
+                    for (i, ident) in t_case.expected_params.iter().enumerate() {
+                        test_lit_expr(&Expression::Identifier(f.params[i].clone()), *ident);
+                    }
+                    return;
+                }
+                panic!("Expression is not a function expression.");
+            }
+            panic!("Statment is not an expression.");
+        }
+    }
+
+    #[test]
     fn test_parse_prefix_expr() {
         pub struct Pre<'a> {
             pub input: &'a str,
