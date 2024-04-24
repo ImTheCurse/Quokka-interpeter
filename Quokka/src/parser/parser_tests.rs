@@ -246,6 +246,103 @@ mod test {
 
         panic!("pancied outside of expression check, @test_int_lit_expr");
     }
+
+    #[test]
+    fn test_if_expr() {
+        let input = "if (x < y) { x }";
+        let mut l = Lexer {
+            ch: 'i',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::If(stmt) = expr_stmt {
+                test_infix_helper(&stmt.condition, "x", "<", "y");
+
+                if stmt.consequence.stmts.len() != 1 {
+                    panic!(
+                        "Consequence is not 1 statment. got: {}",
+                        stmt.consequence.stmts.len()
+                    );
+                }
+
+                if let Statment::Expr(expr) = &stmt.consequence.stmts[0] {
+                    if !test_ident(&expr, "x") {
+                        panic!("Expected ident : {}, but got something else", "x");
+                    }
+                }
+                if stmt.alternative.is_some() {
+                    panic!("stmt.alternative has a value.");
+                }
+            } else {
+                panic!("Expression isn't an if expression.");
+            }
+        }
+    }
+
+    #[test]
+    fn test_if_expr_alternative() {
+        let input = "if (x < y) { x } else { y }";
+        let mut l = Lexer {
+            ch: 'i',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::If(stmt) = expr_stmt {
+                test_infix_helper(&stmt.condition, "x", "<", "y");
+
+                if stmt.consequence.stmts.len() != 1 {
+                    panic!(
+                        "Consequence is not 1 statment. got: {}",
+                        stmt.consequence.stmts.len()
+                    );
+                }
+
+                if let Statment::Expr(expr) = &stmt.consequence.stmts[0] {
+                    if !test_ident(&expr, "x") {
+                        return;
+                    }
+                }
+                if let Statment::Expr(expr) = &stmt.alternative.clone().unwrap().stmts[0] {
+                    if !test_ident(&expr, "y") {
+                        panic!("Expected different identifier in else statment.");
+                    }
+                }
+            } else {
+                panic!("Expression isn't an if expression.");
+            }
+        }
+    }
+
     #[test]
     fn test_parse_prefix_expr() {
         pub struct Pre<'a> {

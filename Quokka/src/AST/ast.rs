@@ -10,6 +10,7 @@ pub enum Expression {
     Prefix(Box<PrefixExpression>),
     Infix(Box<InfixExpression>),
     BoolenExpr(Boolen),
+    If(Box<IfStatment>),
     Blank,
 }
 
@@ -66,7 +67,7 @@ pub struct IfStatment {
 
 #[derive(Clone)]
 pub struct BlockStatment {
-    stmts: Vec<Statment>,
+    pub stmts: Vec<Statment>,
 }
 
 #[derive(Clone)]
@@ -157,6 +158,7 @@ impl Display for Expression {
             }
             Expression::Blank => write!(f, ""),
             Expression::BoolenExpr(bool) => write!(f, "{}", bool.value),
+            Expression::If(stmt) => write!(f, "{}", stmt),
         }
     }
 }
