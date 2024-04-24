@@ -134,6 +134,7 @@ impl Parser {
             TokenType::Minus => self.parse_prefix_expr(),
             TokenType::Plus => self.parse_prefix_expr(),
             TokenType::True | TokenType::False => self.parse_bool_expr(),
+            TokenType::Lparen => self.parse_grouped_expr(),
             _ => self.prefix_error(),
         };
 
@@ -157,6 +158,18 @@ impl Parser {
         }
         Some(lhs)
     }
+
+    fn parse_grouped_expr(&mut self) -> Expression {
+        self.next_token_parser();
+        let expr = self.parse_expr(Precedence::Lowest);
+        if self.peek_token.tok_type != TokenType::Rparen {
+            return Expression::Blank;
+        }
+        self.next_token_parser();
+
+        return expr.unwrap_or(Expression::Blank);
+    }
+
     fn parse_infix_expr(&mut self, left: &Expression) -> Expression {
         let curr_expr = Expression::Blank;
         let mut infix = InfixExpression {

@@ -572,6 +572,26 @@ mod test {
                 inp: "false",
                 expected: "false",
             },
+            Tst {
+                inp: "(5 + 5) * 2",
+                expected: "((5 + 5) * 2)",
+            },
+            Tst {
+                inp: "2 / (5 + 5)",
+                expected: "(2 / (5 + 5))",
+            },
+            Tst {
+                inp: "-(5 + 5)",
+                expected: "(-(5 + 5))",
+            },
+            Tst {
+                inp: "!(true == true)",
+                expected: "(!(true == true))",
+            },
+            Tst {
+                inp: "1 + (2 + 3) + 4",
+                expected: "((1 + (2 + 3)) + 4)",
+            },
         ];
 
         for t_case in &tests {
