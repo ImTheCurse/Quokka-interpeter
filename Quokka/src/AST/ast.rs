@@ -58,6 +58,18 @@ pub struct ReturnStatment {
 }
 
 #[derive(Clone)]
+pub struct IfStatment {
+    pub condition: Expression,
+    pub consequence: BlockStatment,
+    pub alternative: Option<BlockStatment>,
+}
+
+#[derive(Clone)]
+pub struct BlockStatment {
+    stmts: Vec<Statment>,
+}
+
+#[derive(Clone)]
 pub struct ExpressionStatment {
     pub expr: Expression,
 }
@@ -95,6 +107,25 @@ pub enum Prefix {
     Plus,
     Minus,
     Not,
+}
+
+impl Display for IfStatment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "if {} {}", self.condition, self.consequence);
+
+        if self.alternative.is_some() {
+            write!(f, "{}", self.alternative.clone().unwrap());
+        }
+        Ok(())
+    }
+}
+impl Display for BlockStatment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for stmt in self.stmts.iter() {
+            write!(f, "{}", stmt);
+        }
+        Ok(())
+    }
 }
 
 impl Display for Identifier {
