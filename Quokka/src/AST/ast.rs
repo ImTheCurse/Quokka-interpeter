@@ -11,6 +11,7 @@ pub enum Expression {
     Infix(Box<InfixExpression>),
     BoolenExpr(Boolen),
     If(Box<IfStatment>),
+    Func(FunctionLiteral),
     Blank,
 }
 
@@ -176,6 +177,7 @@ impl Display for Expression {
             Expression::Blank => write!(f, ""),
             Expression::BoolenExpr(bool) => write!(f, "{}", bool.value),
             Expression::If(stmt) => write!(f, "{}", stmt),
+            Expression::Func(func) => write!(f, "{}", func),
         }
     }
 }

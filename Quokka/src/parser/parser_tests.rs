@@ -344,6 +344,58 @@ mod test {
     }
 
     #[test]
+    fn test_func_literal_parse() {
+        let input = "fn(x, y) { x + y; }";
+        let mut l = Lexer {
+            ch: 'f',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::Func(f) = expr_stmt {
+                if f.params.len() != 2 {
+                    panic!(
+                        "unexpected number of parameters, Expected: {}, Got: {}",
+                        2,
+                        f.params.len()
+                    );
+                }
+                test_lit_expr(&Expression::Identifier(f.params[0].clone()), "x");
+                test_lit_expr(&Expression::Identifier(f.params[1].clone()), "y");
+
+                if f.body.stmts.len() != 1 {
+                    panic!(
+                        "Unexpected number of statments in body, Expected: {}, Got: {}",
+                        1,
+                        f.body.stmts.len()
+                    );
+                }
+
+                if let Statment::Expr(ex) = &f.body.stmts[0] {
+                    test_infix_helper(&ex, "x", "+", "y");
+                    return;
+                }
+                panic!("function body is not an Expression");
+            }
+            panic!("Expression is not a function literal.");
+        }
+    }
+
+    #[test]
     fn test_parse_prefix_expr() {
         pub struct Pre<'a> {
             pub input: &'a str,
