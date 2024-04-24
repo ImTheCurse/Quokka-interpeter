@@ -71,6 +71,12 @@ pub struct BlockStatment {
 }
 
 #[derive(Clone)]
+pub struct FunctionLiteral {
+    pub params: Vec<Identifier>,
+    pub body: BlockStatment,
+}
+
+#[derive(Clone)]
 pub struct ExpressionStatment {
     pub expr: Expression,
 }
@@ -108,6 +114,17 @@ pub enum Prefix {
     Plus,
     Minus,
     Not,
+}
+
+impl Display for FunctionLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut params = Vec::new();
+        for p in &self.params {
+            params.push(p.to_string());
+        }
+        let s = params.join(", ");
+        write!(f, "fn ({}) {}", s, self.body.to_string())
+    }
 }
 
 impl Display for IfStatment {
