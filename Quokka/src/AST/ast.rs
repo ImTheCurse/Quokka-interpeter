@@ -9,6 +9,10 @@ pub enum Expression {
     Int(IntLiteral),
     Prefix(Box<PrefixExpression>),
     Infix(Box<InfixExpression>),
+    BoolenExpr(Boolen),
+    If(Box<IfStatment>),
+    Func(FunctionLiteral),
+    Call(Box<CallExpression>),
     Blank,
 }
 
@@ -35,6 +39,12 @@ pub struct IntLiteral {
 }
 
 #[derive(Clone)]
+pub struct Boolen {
+    pub value: bool,
+    pub tok_type: TokenType,
+}
+
+#[derive(Clone)]
 pub struct LetStatment {
     pub ident: Identifier,
     pub value: Expression,
@@ -48,6 +58,30 @@ pub struct Identifier {
 #[derive(Clone)]
 pub struct ReturnStatment {
     pub return_value: Expression,
+}
+
+#[derive(Clone)]
+pub struct IfStatment {
+    pub condition: Expression,
+    pub consequence: BlockStatment,
+    pub alternative: Option<BlockStatment>,
+}
+
+#[derive(Clone)]
+pub struct BlockStatment {
+    pub stmts: Vec<Statment>,
+}
+
+#[derive(Clone)]
+pub struct FunctionLiteral {
+    pub params: Vec<Identifier>,
+    pub body: BlockStatment,
+}
+
+#[derive(Clone)]
+pub struct CallExpression {
+    pub arguments: Vec<Expression>,
+    pub function: Expression,
 }
 
 #[derive(Clone)]
@@ -90,6 +124,46 @@ pub enum Prefix {
     Not,
 }
 
+impl Display for FunctionLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut params = Vec::new();
+        for p in &self.params {
+            params.push(p.to_string());
+        }
+        let s = params.join(", ");
+        write!(f, "fn ({}) {}", s, self.body.to_string())
+    }
+}
+
+impl Display for CallExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut args = vec![];
+        for a in &self.arguments {
+            args.push(a.to_string());
+        }
+        write!(f, "{}({} )", self.function.to_string(), args.join(", "))
+    }
+}
+
+impl Display for IfStatment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "if {} {}", self.condition, self.consequence);
+
+        if self.alternative.is_some() {
+            write!(f, "{}", self.alternative.clone().unwrap());
+        }
+        Ok(())
+    }
+}
+impl Display for BlockStatment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for stmt in self.stmts.iter() {
+            write!(f, "{}", stmt);
+        }
+        Ok(())
+    }
+}
+
 impl Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
@@ -118,6 +192,10 @@ impl Display for Expression {
                 write!(f, "{})", i_ex.rhs)
             }
             Expression::Blank => write!(f, ""),
+            Expression::BoolenExpr(bool) => write!(f, "{}", bool.value),
+            Expression::If(stmt) => write!(f, "{}", stmt),
+            Expression::Func(func) => write!(f, "{}", func),
+            Expression::Call(c) => write!(f, "{}", c),
         }
     }
 }

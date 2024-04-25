@@ -1,8 +1,8 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    Expression, Identifier, Infix, InfixExpression, IntLiteral, LetStatment, Literal,
-    PrefixExpression, Program, Statment,
+    BlockStatment, Boolen, CallExpression, Expression, FunctionLiteral, Identifier, IfStatment,
+    InfixExpression, IntLiteral, LetStatment, PrefixExpression, Program, ReturnStatment, Statment,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
@@ -96,8 +96,6 @@ impl Parser {
             TokenType::Return => self.parse_return_statments(),
             TokenType::Illegal => None,
             _ => self.parse_expr_statments(),
-
-            _ => None,
         };
     }
 
@@ -113,6 +111,18 @@ impl Parser {
         };
     }
 
+    fn parse_bool_expr(&mut self) -> Expression {
+        let bol = Boolen {
+            tok_type: if self.curr_token_is(&TokenType::True) {
+                TokenType::True
+            } else {
+                TokenType::False
+            },
+            value: self.curr_token_is(&TokenType::True),
+        };
+        Expression::BoolenExpr(bol)
+    }
+
     fn parse_expr(&mut self, prec: Precedence) -> Option<Expression> {
         // prefix
         let mut lhs = match self.curr_token.tok_type {
@@ -121,6 +131,10 @@ impl Parser {
             TokenType::Not => self.parse_prefix_expr(),
             TokenType::Minus => self.parse_prefix_expr(),
             TokenType::Plus => self.parse_prefix_expr(),
+            TokenType::True | TokenType::False => self.parse_bool_expr(),
+            TokenType::Lparen => self.parse_grouped_expr(),
+            TokenType::If => self.parse_if_expr()?,
+            TokenType::Function => self.parse_func_literal()?,
             _ => self.prefix_error(),
         };
 
@@ -139,12 +153,158 @@ impl Parser {
                     self.next_token_parser();
                     lhs = self.parse_infix_expr(&lhs);
                 }
+                TokenType::Lparen => {
+                    self.next_token_parser();
+                    lhs = self.parse_call_expr(&lhs);
+                }
                 _ => return Some(lhs),
             };
-            
         }
         Some(lhs)
     }
+
+    fn parse_call_expr(&mut self, func: &Expression) -> Expression {
+        let expr = CallExpression {
+            arguments: self.parse_call_arguments(),
+            function: func.clone(),
+        };
+        Expression::Call(Box::new(expr))
+    }
+
+    fn parse_call_arguments(&mut self) -> Vec<Expression> {
+        let mut args = Vec::new();
+        if self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+            return args;
+        }
+        self.next_token_parser();
+        args.push(
+            self.parse_expr(Precedence::Lowest)
+                .unwrap_or(Expression::Blank),
+        );
+
+        while !self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+            self.next_token_parser();
+            args.push(
+                self.parse_expr(Precedence::Lowest)
+                    .unwrap_or(Expression::Blank),
+            );
+        }
+        if self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+        }
+        return args;
+    }
+
+    fn parse_func_literal(&mut self) -> Option<Expression> {
+        let mut lit = FunctionLiteral {
+            params: Vec::new(),
+            body: BlockStatment { stmts: Vec::new() },
+        };
+        if !self.next_token_is(&TokenType::Lparen) {
+            return None;
+        }
+        self.next_token_parser();
+        lit.params = self.parse_func_param().unwrap_or(Vec::new());
+
+        if !self.next_token_is(&TokenType::Lbrack) {
+            return None;
+        }
+        self.next_token_parser();
+        lit.body = *self.parse_block_statment();
+        return Some(Expression::Func(lit));
+    }
+
+    fn parse_func_param(&mut self) -> Option<Vec<Identifier>> {
+        let mut identifiers = Vec::new();
+        if self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+            return None;
+        }
+        self.next_token_parser();
+        let ident = Identifier {
+            value: self.curr_token.literal.clone(),
+        };
+        identifiers.push(ident);
+
+        while self.next_token_is(&TokenType::Comma) {
+            self.next_token_parser();
+            self.next_token_parser();
+            let ident = Identifier {
+                value: self.curr_token.literal.clone(),
+            };
+            identifiers.push(ident);
+        }
+        if !self.next_token_is(&TokenType::Rparen) {
+            return None;
+        }
+        self.next_token_parser();
+        return Some(identifiers);
+    }
+
+    fn parse_if_expr(&mut self) -> Option<Expression> {
+        let consq_block = BlockStatment { stmts: Vec::new() };
+
+        let mut expr = IfStatment {
+            condition: Expression::Blank,
+            consequence: consq_block,
+            alternative: None,
+        };
+        if self.peek_token.tok_type != TokenType::Lparen {
+            return None;
+        }
+        self.next_token_parser();
+        self.next_token_parser();
+        expr.condition = self.parse_expr(Precedence::Lowest)?;
+        if self.peek_token.tok_type != TokenType::Rparen {
+            return None;
+        }
+        self.next_token_parser();
+        if self.peek_token.tok_type != TokenType::Lbrack {
+            return None;
+        }
+        self.next_token_parser();
+        expr.consequence = *self.parse_block_statment();
+
+        if self.next_token_is(&TokenType::Else) {
+            self.next_token_parser();
+            if self.peek_token.tok_type != TokenType::Lbrack {
+                return None;
+            }
+            self.next_token_parser();
+            expr.alternative = Some(*self.parse_block_statment());
+        }
+
+        return Some(Expression::If(Box::new(expr)));
+    }
+
+    fn parse_block_statment(&mut self) -> Box<BlockStatment> {
+        let mut block = BlockStatment { stmts: Vec::new() };
+        self.next_token_parser();
+        while !self.curr_token_is(&TokenType::Rbrack) && !self.curr_token_is(&TokenType::EOF) {
+            let stmt = self.parse_statment(self.curr_token.clone());
+            if stmt.is_some() {
+                block
+                    .stmts
+                    .push(stmt.unwrap_or(Statment::Expr(Expression::Blank)));
+            }
+            self.next_token_parser();
+        }
+        return Box::new(block);
+    }
+
+    fn parse_grouped_expr(&mut self) -> Expression {
+        self.next_token_parser();
+        let expr = self.parse_expr(Precedence::Lowest);
+        if self.peek_token.tok_type != TokenType::Rparen {
+            return Expression::Blank;
+        }
+        self.next_token_parser();
+
+        return expr.unwrap_or(Expression::Blank);
+    }
+
     fn parse_infix_expr(&mut self, left: &Expression) -> Expression {
         let curr_expr = Expression::Blank;
         let mut infix = InfixExpression {
@@ -188,52 +348,41 @@ impl Parser {
     }
 
     fn prefix_error(&mut self) -> Expression {
-        todo!()
+        let s = "Prefix is incorrect, no prefix function to parse current prefix. got: "
+            .to_string()
+            + &self.curr_token.literal.to_string();
+        self.errors.push(s);
+        Expression::Blank
     }
 
     fn parse_let_statment(&mut self) -> Option<Statment> {
-        //expect_peek() also gets the next token
-        //Current state:
-        //curr_token = let
-        //peek_token = identifier.
-        if self.peek_token.tok_type != TokenType::Ident {
-            self.peek_error(TokenType::Ident);
-            return None;
-        }
-        let ident = Identifier {
-            value: self.peek_token.literal.to_string(),
+        let mut stmt = LetStatment {
+            ident: Identifier {
+                value: "".to_string(),
+            },
+            value: Expression::Blank,
         };
-        self.next_token_parser();
-
-        //State:
-        //curr_token = identifier
-        //peek_token = assignment
-        if self.peek_token.tok_type != TokenType::Assign {
-            self.peek_error(TokenType::Assign);
+        if !self.next_token_is(&TokenType::Ident) {
+            self.next_token_parser();
             return None;
         }
         self.next_token_parser();
 
-        //TODO: we're skipping the expression untill we encounter semicolon.
-        //TODO: Notice to change expression aswell
-        //state:
-        //curr_token = assignment
-        //peek_token = value / expression
-        let val = &self.peek_token.literal;
-        if self.peek_token.tok_type != TokenType::Int(val.parse::<i32>().unwrap()) {
+        stmt.ident = Identifier {
+            value: self.curr_token.literal.clone(),
+        };
+        if !self.next_token_is(&TokenType::Assign) {
+            self.next_token_parser();
             return None;
         }
-        let lit = Literal {
-            value: val.to_string(),
-        };
-        let stmt = LetStatment {
-            ident: ident,
-            value: Expression::Literal(lit),
-        };
-        while self.curr_token.tok_type != TokenType::Semicolon {
+        self.next_token_parser();
+        self.next_token_parser();
+
+        stmt.value = self.parse_expr(Precedence::Lowest)?;
+        if self.next_token_is(&TokenType::Semicolon) {
             self.next_token_parser();
         }
-        return Some(Statment::Let(stmt));
+        Some(Statment::Let(stmt))
     }
 
     pub fn errors(&self) -> Vec<String> {
@@ -251,6 +400,16 @@ impl Parser {
     }
 
     pub fn parse_return_statments(&mut self) -> Option<Statment> {
-        todo!()
+        let mut stmt = ReturnStatment {
+            return_value: Expression::Blank,
+        };
+
+        self.next_token_parser();
+        stmt.return_value = self.parse_expr(Precedence::Lowest)?;
+
+        if self.next_token_is(&TokenType::Semicolon) {
+            self.next_token_parser();
+        }
+        Some(Statment::Return(stmt))
     }
 }

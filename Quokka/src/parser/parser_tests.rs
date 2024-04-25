@@ -2,39 +2,123 @@
 mod test {
     use crate::lexer::lexer::*;
     use crate::parser::parser::Parser;
+    use crate::token::token::TokenType;
     use crate::AST::ast::{Expression, Statment};
+    use castaway::cast;
     use std::panic;
+
+    trait Matchable {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable + 'static;
+    }
+
+    impl Matchable for i32 {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable + 'static,
+        {
+            let x = cast!(expected, i32);
+            test_int_lit(expr, x.unwrap_or(0));
+        }
+    }
+
+    impl Matchable for &str {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable + 'static,
+        {
+            let x = cast!(expected, &str);
+            test_ident(expr, x.unwrap_or(""));
+        }
+    }
+
+    impl Matchable for bool {
+        fn callback<T>(expr: &Expression, expected: T)
+        where
+            T: Matchable,
+        {
+            let x = cast!(expected, bool);
+            if x.is_err() {
+                panic!("Expected isn't a boolen type. @Matchable - callback()");
+            }
+            test_bool_helper(expr, x.unwrap_or(true));
+        }
+    }
 
     #[test]
     fn test_let_statments() {
-        let input = "
-        let x = 5;
-        let y = 8;
-        let foobar = 83838;
-        ";
-        let mut l = Lexer {
-            ch: 'l',
-            input: input.to_string(),
-        };
-        let lex = Lexer::new(&mut l, input.to_string());
-        let mut prsr = Parser::new(lex);
-
-        let program = prsr.parse_program();
-        if program.is_none() {
-            panic!("Paniced @ parse_program() - no program exists.")
+        enum Dtype<'a> {
+            Str(&'a str),
+            Int(i32),
+            Bool(bool),
         }
-        if program.clone().unwrap().statments.len() != 3 {
-            check_parser_errors(prsr.errors);
-            panic!(
-                "program.statments does not contain 3 statments, got: {}",
-                program.unwrap().statments.len()
-            );
+        struct Test<'a> {
+            inp: &'a str,
+            expected_ident: &'a str,
+            expected_value: Dtype<'a>,
         }
-        let tests = vec!["x", "y", "foobar"];
 
-        for (i, val) in tests.iter().enumerate() {
-            let stmt = &program.clone().unwrap().statments[i];
-            test_let_helper(&stmt, val);
+        let tests = vec![
+            Test {
+                inp: "let x = 5;",
+                expected_ident: "x",
+                expected_value: Dtype::Int(5),
+            },
+            Test {
+                inp: "let y = true;",
+                expected_ident: "y",
+                expected_value: Dtype::Bool(true),
+            },
+            Test {
+                inp: "let foobar = y;",
+                expected_ident: "foobar",
+                expected_value: Dtype::Str("y"),
+            },
+        ];
+
+        for t_case in &tests {
+            let mut l = Lexer {
+                ch: 'l',
+                input: t_case.inp.to_string(),
+            };
+            let lex = Lexer::new(&mut l, t_case.inp.to_string());
+            let mut prsr = Parser::new(lex);
+
+            let program = prsr.parse_program();
+            if program.is_none() {
+                panic!("Paniced @ parse_program() - no program exists.")
+            }
+            if program.clone().unwrap().statments.len() != 1 {
+                check_parser_errors(prsr.errors);
+                panic!(
+                    "program.statments does not contain 1 statments, got: {}",
+                    program.unwrap().statments.len()
+                );
+            }
+
+            let stmt = &program.clone().unwrap().statments[0];
+            test_let_helper(&stmt, t_case.expected_ident);
+
+            if let Statment::Let(stmt) = &program.unwrap().statments[0] {
+                let val = &stmt.value;
+
+                match t_case.expected_value {
+                    Dtype::Str(s) => {
+                        test_lit_expr(&val, s);
+                        return;
+                    }
+                    Dtype::Int(i) => {
+                        test_lit_expr(&val, i);
+                        return;
+                    }
+                    Dtype::Bool(b) => {
+                        test_lit_expr(&val, b);
+                        return;
+                    }
+                };
+            }
+            panic!("Statment is not a Let statment");
         }
     }
     fn test_let_helper(stmt: &Statment, ident: &str) {
@@ -123,6 +207,51 @@ mod test {
 
         panic!("pancied outside of expression check, @test_ident_expr");
     }
+
+    #[test]
+    fn test_bool_expr() {
+        let input = "true;";
+        let mut l = Lexer {
+            ch: 't',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::BoolenExpr(bool_expr) = &expr_stmt {
+                if bool_expr.value != true {
+                    panic!(
+                        "Boolen expresion isn't correct, expected: {}, got: {}",
+                        true, bool_expr.value
+                    );
+                }
+                if bool_expr.tok_type != TokenType::True {
+                    panic!(
+                        "TokenType isn't correct, expected: {}, got: {}",
+                        TokenType::True,
+                        bool_expr.tok_type
+                    );
+                }
+                return;
+            }
+            panic!("Expression isn't Boolen expresion");
+        }
+        panic!("Statment isn't an expression.");
+    }
+
     #[test]
     fn test_int_lit_expr() {
         let input = "
@@ -160,6 +289,258 @@ mod test {
 
         panic!("pancied outside of expression check, @test_int_lit_expr");
     }
+
+    #[test]
+    fn test_if_expr() {
+        let input = "if (x < y) { x }";
+        let mut l = Lexer {
+            ch: 'i',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::If(stmt) = expr_stmt {
+                test_infix_helper(&stmt.condition, "x", "<", "y");
+
+                if stmt.consequence.stmts.len() != 1 {
+                    panic!(
+                        "Consequence is not 1 statment. got: {}",
+                        stmt.consequence.stmts.len()
+                    );
+                }
+
+                if let Statment::Expr(expr) = &stmt.consequence.stmts[0] {
+                    if !test_ident(&expr, "x") {
+                        panic!("Expected ident : {}, but got something else", "x");
+                    }
+                }
+                if stmt.alternative.is_some() {
+                    panic!("stmt.alternative has a value.");
+                }
+            } else {
+                panic!("Expression isn't an if expression.");
+            }
+        }
+    }
+
+    #[test]
+    fn test_if_expr_alternative() {
+        let input = "if (x < y) { x } else { y }";
+        let mut l = Lexer {
+            ch: 'i',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::If(stmt) = expr_stmt {
+                test_infix_helper(&stmt.condition, "x", "<", "y");
+
+                if stmt.consequence.stmts.len() != 1 {
+                    panic!(
+                        "Consequence is not 1 statment. got: {}",
+                        stmt.consequence.stmts.len()
+                    );
+                }
+
+                if let Statment::Expr(expr) = &stmt.consequence.stmts[0] {
+                    if !test_ident(&expr, "x") {
+                        return;
+                    }
+                }
+                if let Statment::Expr(expr) = &stmt.alternative.clone().unwrap().stmts[0] {
+                    if !test_ident(&expr, "y") {
+                        panic!("Expected different identifier in else statment.");
+                    }
+                }
+            } else {
+                panic!("Expression isn't an if expression.");
+            }
+        }
+    }
+
+    #[test]
+    fn test_call_expr_parse() {
+        let input = "add(1, 2 * 3, 4 + 5);";
+        let mut l = Lexer {
+            ch: 'a',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::Call(call) = expr_stmt {
+                if !test_ident(&call.function, "add") {
+                    panic!(
+                        "Unexpected identifier, Expected: {}, Got: {}",
+                        "add", call.function
+                    );
+                }
+                if call.arguments.len() != 3 {
+                    panic!(
+                        "Unexpected number of arguments, Expected: {}, Got: {}",
+                        3,
+                        call.arguments.len()
+                    );
+                }
+
+                test_lit_expr(&call.arguments[0], 1);
+                test_infix_helper(&call.arguments[1], 2, "*", 3);
+                test_infix_helper(&call.arguments[2], 4, "+", 5);
+                return;
+            }
+            panic!("Expression is not a Call Expression");
+        }
+        panic!("Statment is not an Expression");
+    }
+
+    #[test]
+    fn test_func_literal_parse() {
+        let input = "fn(x, y) { x + y; }";
+        let mut l = Lexer {
+            ch: 'f',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::Func(f) = expr_stmt {
+                if f.params.len() != 2 {
+                    panic!(
+                        "unexpected number of parameters, Expected: {}, Got: {}",
+                        2,
+                        f.params.len()
+                    );
+                }
+                test_lit_expr(&Expression::Identifier(f.params[0].clone()), "x");
+                test_lit_expr(&Expression::Identifier(f.params[1].clone()), "y");
+
+                if f.body.stmts.len() != 1 {
+                    panic!(
+                        "Unexpected number of statments in body, Expected: {}, Got: {}",
+                        1,
+                        f.body.stmts.len()
+                    );
+                }
+
+                if let Statment::Expr(ex) = &f.body.stmts[0] {
+                    test_infix_helper(&ex, "x", "+", "y");
+                    return;
+                }
+                panic!("function body is not an Expression");
+            }
+            panic!("Expression is not a function literal.");
+        }
+    }
+
+    #[test]
+    fn test_func_param_parse() {
+        struct Test<'a> {
+            inp: &'a str,
+            expected_params: Vec<&'a str>,
+        }
+        let tests = vec![
+            Test {
+                inp: "fn() {};",
+                expected_params: vec![],
+            },
+            Test {
+                inp: "fn(x) {};",
+                expected_params: vec!["x"],
+            },
+            Test {
+                inp: "fn(x, y, z) {};",
+                expected_params: vec!["x", "y", "z"],
+            },
+        ];
+
+        for t_case in &tests {
+            let mut l = Lexer {
+                ch: '5',
+                input: t_case.inp.to_string(),
+            };
+            let lex = Lexer::new(&mut l, t_case.inp.to_string());
+            let mut prsr = Parser::new(lex);
+
+            let program = prsr.parse_program();
+            if program.is_none() {
+                panic!("Paniced @ parse_program() - no program exists.")
+            }
+
+            if let Statment::Expr(expr) = &program.unwrap().statments[0] {
+                if let Expression::Func(f) = expr {
+                    if f.params.len() != t_case.expected_params.len() {
+                        panic!(
+                            "Unexpected number of paramaters, Expected: {}, Got: {}",
+                            t_case.expected_params.len(),
+                            f.params.len()
+                        );
+                    }
+
+                    for (i, ident) in t_case.expected_params.iter().enumerate() {
+                        test_lit_expr(&Expression::Identifier(f.params[i].clone()), *ident);
+                    }
+                    return;
+                }
+                panic!("Expression is not a function expression.");
+            }
+            panic!("Statment is not an expression.");
+        }
+    }
+
     #[test]
     fn test_parse_prefix_expr() {
         pub struct Pre<'a> {
@@ -220,61 +601,83 @@ mod test {
     }
     #[test]
     fn test_infix_expr() {
+        enum Dtype {
+            Int(i32),
+            Bool(bool),
+        }
         struct Infix<'a> {
             input: &'a str,
-            lhs: i32,
+            lhs: Dtype,
             op: &'a str,
-            rhs: i32,
+            rhs: Dtype,
         }
 
         let infix_tests = vec![
             Infix {
                 input: "5 + 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "+",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 - 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "-",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 * 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "*",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 / 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "/",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 > 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: ">",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 < 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "<",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 == 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "==",
-                rhs: 5,
+                rhs: Dtype::Int(5),
             },
             Infix {
                 input: "5 != 5;",
-                lhs: 5,
+                lhs: Dtype::Int(5),
                 op: "!=",
-                rhs: 5,
+                rhs: Dtype::Int(5),
+            },
+            Infix {
+                input: "true == true",
+                lhs: Dtype::Bool(true),
+                op: "==",
+                rhs: Dtype::Bool(true),
+            },
+            Infix {
+                input: "true != false",
+                lhs: Dtype::Bool(true),
+                op: "!=",
+                rhs: Dtype::Bool(false),
+            },
+            Infix {
+                input: "false == false",
+                lhs: Dtype::Bool(true),
+                op: "==",
+                rhs: Dtype::Bool(false),
             },
         ];
         for t_case in &infix_tests {
@@ -305,8 +708,21 @@ mod test {
                                 t_case.op, infix.operator
                             );
                         }
-                        test_int_lit(&infix.lhs, t_case.lhs);
-                        test_int_lit(&infix.rhs, t_case.rhs);
+
+                        if let Dtype::Bool(lhs) = t_case.lhs {
+                            if let Dtype::Bool(rhs) = t_case.rhs {
+                                test_infix_helper(expr, lhs, t_case.op, rhs)
+                            }
+                        }
+
+                        if let Dtype::Int(lhs) = t_case.lhs {
+                            if let Dtype::Int(rhs) = t_case.rhs {
+                                test_infix_helper(expr, lhs, t_case.op, rhs)
+                            }
+                        }
+
+                        // test_int_lit(&infix.lhs, t_case.lhs);
+                        // test_int_lit(&infix.rhs, t_case.rhs);
                         return;
                     }
                     _ => panic!("Expression isn't an infix Expression "),
@@ -330,6 +746,55 @@ mod test {
         panic!("Expression isn't an int literal");
     }
 
+    fn test_ident(expr: &Expression, val: &str) -> bool {
+        let ident = match expr {
+            Expression::Identifier(i) => i,
+            _ => panic!("expression isn't identifier."),
+        };
+
+        if ident.value != val {
+            panic!("ident.value not {}. got {}", val, ident.value);
+        }
+        return true;
+    }
+
+    fn test_bool_helper(expr: &Expression, value: bool) {
+        if let Expression::BoolenExpr(bool_expr) = expr {
+            if bool_expr.value != value {
+                panic!(
+                    "Boolen expression is incorrect, Expected: {},Got: {}",
+                    value, bool_expr.value
+                );
+            }
+            return;
+        }
+        panic!("Expression isn't Boolen.");
+    }
+
+    fn test_lit_expr<T>(expr: &Expression, expected: T)
+    where
+        T: Matchable + 'static,
+    {
+        T::callback(expr, expected)
+    }
+    fn test_infix_helper<T>(expr: &Expression, lhs: T, op: &str, rhs: T)
+    where
+        T: Matchable + 'static,
+    {
+        if let Expression::Infix(inf) = expr {
+            if inf.operator != op {
+                panic!(
+                    "infix operator is not correct. Expected: {}, Got: {}",
+                    op, inf.operator
+                );
+            }
+            test_lit_expr(&inf.lhs, lhs);
+            test_lit_expr(&inf.rhs, rhs);
+            return;
+        }
+        panic!("Expression is not Infix.");
+    }
+
     #[test]
     fn test_op_precedence_parse() {
         struct Tst<'a> {
@@ -347,8 +812,8 @@ mod test {
                 expected: "(!(-a))",
             },
             Tst {
-              inp: "a + b + c",
-            expected: "((a + b) + c)",
+                inp: "a + b + c",
+                expected: "((a + b) + c)",
             },
             Tst {
                 inp: "a * b * c",
@@ -385,6 +850,54 @@ mod test {
             Tst {
                 inp: "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            },
+            Tst {
+                inp: "3 < 5 == true",
+                expected: "((3 < 5) == true)",
+            },
+            Tst {
+                inp: "3 > 5 == false",
+                expected: "((3 > 5) == false)",
+            },
+            Tst {
+                inp: "true",
+                expected: "true",
+            },
+            Tst {
+                inp: "false",
+                expected: "false",
+            },
+            Tst {
+                inp: "(5 + 5) * 2",
+                expected: "((5 + 5) * 2)",
+            },
+            Tst {
+                inp: "2 / (5 + 5)",
+                expected: "(2 / (5 + 5))",
+            },
+            Tst {
+                inp: "-(5 + 5)",
+                expected: "(-(5 + 5))",
+            },
+            Tst {
+                inp: "!(true == true)",
+                expected: "(!(true == true))",
+            },
+            Tst {
+                inp: "1 + (2 + 3) + 4",
+                expected: "((1 + (2 + 3)) + 4)",
+            },
+            Tst {
+                inp: "a + add(b * c) + d",
+                expected: "((a + add((b * c) )) + d)",
+            },
+            Tst {
+                inp: "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+                expected: "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8) ) )",
+            },
+            Tst {
+                inp: "add(a + b + c * d / f + g)",
+                expected: "add((((a + b) + ((c * d) / f)) + g) )",
             },
         ];
 
