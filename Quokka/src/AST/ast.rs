@@ -12,6 +12,7 @@ pub enum Expression {
     BoolenExpr(Boolen),
     If(Box<IfStatment>),
     Func(FunctionLiteral),
+    Call(Box<CallExpression>),
     Blank,
 }
 
@@ -78,6 +79,12 @@ pub struct FunctionLiteral {
 }
 
 #[derive(Clone)]
+pub struct CallExpression {
+    pub arguments: Vec<Expression>,
+    pub function: Expression,
+}
+
+#[derive(Clone)]
 pub struct ExpressionStatment {
     pub expr: Expression,
 }
@@ -125,6 +132,16 @@ impl Display for FunctionLiteral {
         }
         let s = params.join(", ");
         write!(f, "fn ({}) {}", s, self.body.to_string())
+    }
+}
+
+impl Display for CallExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut args = vec![];
+        for a in &self.arguments {
+            args.push(a.to_string());
+        }
+        write!(f, "{}({} )", self.function.to_string(), args.join(", "))
     }
 }
 
@@ -178,6 +195,7 @@ impl Display for Expression {
             Expression::BoolenExpr(bool) => write!(f, "{}", bool.value),
             Expression::If(stmt) => write!(f, "{}", stmt),
             Expression::Func(func) => write!(f, "{}", func),
+            Expression::Call(c) => write!(f, "{}", c),
         }
     }
 }

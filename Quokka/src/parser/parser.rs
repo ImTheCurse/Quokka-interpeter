@@ -1,7 +1,7 @@
 use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
-    BlockStatment, Boolen, Expression, FunctionLiteral, Identifier, IfStatment, Infix,
+    BlockStatment, Boolen, CallExpression, Expression, FunctionLiteral, Identifier, IfStatment,
     InfixExpression, IntLiteral, LetStatment, Literal, PrefixExpression, Program, Statment,
 };
 use c_enum::c_enum;
@@ -96,8 +96,6 @@ impl Parser {
             TokenType::Return => self.parse_return_statments(),
             TokenType::Illegal => None,
             _ => self.parse_expr_statments(),
-
-            _ => None,
         };
     }
 
@@ -155,10 +153,48 @@ impl Parser {
                     self.next_token_parser();
                     lhs = self.parse_infix_expr(&lhs);
                 }
+                TokenType::Lparen => {
+                    self.next_token_parser();
+                    lhs = self.parse_call_expr(&lhs);
+                }
                 _ => return Some(lhs),
             };
         }
         Some(lhs)
+    }
+
+    fn parse_call_expr(&mut self, func: &Expression) -> Expression {
+        let expr = CallExpression {
+            arguments: self.parse_call_arguments(),
+            function: func.clone(),
+        };
+        Expression::Call(Box::new(expr))
+    }
+
+    fn parse_call_arguments(&mut self) -> Vec<Expression> {
+        let mut args = Vec::new();
+        if self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+            return args;
+        }
+        self.next_token_parser();
+        args.push(
+            self.parse_expr(Precedence::Lowest)
+                .unwrap_or(Expression::Blank),
+        );
+
+        while !self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+            self.next_token_parser();
+            args.push(
+                self.parse_expr(Precedence::Lowest)
+                    .unwrap_or(Expression::Blank),
+            );
+        }
+        if self.next_token_is(&TokenType::Rparen) {
+            self.next_token_parser();
+        }
+        return args;
     }
 
     fn parse_func_literal(&mut self) -> Option<Expression> {

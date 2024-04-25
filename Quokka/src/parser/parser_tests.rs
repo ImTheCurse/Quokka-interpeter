@@ -3,7 +3,7 @@ mod test {
     use crate::lexer::lexer::*;
     use crate::parser::parser::Parser;
     use crate::token::token::TokenType;
-    use crate::AST::ast::{Expression, Identifier, Statment};
+    use crate::AST::ast::{Expression, Statment};
     use castaway::cast;
     use std::panic;
 
@@ -341,6 +341,54 @@ mod test {
                 panic!("Expression isn't an if expression.");
             }
         }
+    }
+
+    #[test]
+    fn test_call_expr_parse() {
+        let input = "add(1, 2 * 3, 4 + 5);";
+        let mut l = Lexer {
+            ch: 'a',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(expr_stmt) = &program.unwrap().statments[0] {
+            if let Expression::Call(call) = expr_stmt {
+                if !test_ident(&call.function, "add") {
+                    panic!(
+                        "Unexpected identifier, Expected: {}, Got: {}",
+                        "add", call.function
+                    );
+                }
+                if call.arguments.len() != 3 {
+                    panic!(
+                        "Unexpected number of arguments, Expected: {}, Got: {}",
+                        3,
+                        call.arguments.len()
+                    );
+                }
+
+                test_lit_expr(&call.arguments[0], 1);
+                test_infix_helper(&call.arguments[1], 2, "*", 3);
+                test_infix_helper(&call.arguments[2], 4, "+", 5);
+                return;
+            }
+            panic!("Expression is not a Call Expression");
+        }
+        panic!("Statment is not an Expression");
     }
 
     #[test]
@@ -795,6 +843,18 @@ mod test {
             Tst {
                 inp: "1 + (2 + 3) + 4",
                 expected: "((1 + (2 + 3)) + 4)",
+            },
+            Tst {
+                inp: "a + add(b * c) + d",
+                expected: "((a + add((b * c) )) + d)",
+            },
+            Tst {
+                inp: "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+                expected: "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8) ) )",
+            },
+            Tst {
+                inp: "add(a + b + c * d / f + g)",
+                expected: "add((((a + b) + ((c * d) / f)) + g) )",
             },
         ];
 
