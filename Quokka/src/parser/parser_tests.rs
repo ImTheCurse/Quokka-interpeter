@@ -48,34 +48,77 @@ mod test {
 
     #[test]
     fn test_let_statments() {
-        let input = "
-        let x = 5;
-        let y = 8;
-        let foobar = 83838;
-        ";
-        let mut l = Lexer {
-            ch: 'l',
-            input: input.to_string(),
-        };
-        let lex = Lexer::new(&mut l, input.to_string());
-        let mut prsr = Parser::new(lex);
-
-        let program = prsr.parse_program();
-        if program.is_none() {
-            panic!("Paniced @ parse_program() - no program exists.")
+        enum Dtype<'a> {
+            Str(&'a str),
+            Int(i32),
+            Bool(bool),
         }
-        if program.clone().unwrap().statments.len() != 3 {
-            check_parser_errors(prsr.errors);
-            panic!(
-                "program.statments does not contain 3 statments, got: {}",
-                program.unwrap().statments.len()
-            );
+        struct Test<'a> {
+            inp: &'a str,
+            expected_ident: &'a str,
+            expected_value: Dtype<'a>,
         }
-        let tests = vec!["x", "y", "foobar"];
 
-        for (i, val) in tests.iter().enumerate() {
-            let stmt = &program.clone().unwrap().statments[i];
-            test_let_helper(&stmt, val);
+        let tests = vec![
+            Test {
+                inp: "let x = 5;",
+                expected_ident: "x",
+                expected_value: Dtype::Int(5),
+            },
+            Test {
+                inp: "let y = true;",
+                expected_ident: "y",
+                expected_value: Dtype::Bool(true),
+            },
+            Test {
+                inp: "let foobar = y;",
+                expected_ident: "foobar",
+                expected_value: Dtype::Str("y"),
+            },
+        ];
+
+        for t_case in &tests {
+            let mut l = Lexer {
+                ch: 'l',
+                input: t_case.inp.to_string(),
+            };
+            let lex = Lexer::new(&mut l, t_case.inp.to_string());
+            let mut prsr = Parser::new(lex);
+
+            let program = prsr.parse_program();
+            if program.is_none() {
+                panic!("Paniced @ parse_program() - no program exists.")
+            }
+            if program.clone().unwrap().statments.len() != 1 {
+                check_parser_errors(prsr.errors);
+                panic!(
+                    "program.statments does not contain 1 statments, got: {}",
+                    program.unwrap().statments.len()
+                );
+            }
+
+            let stmt = &program.clone().unwrap().statments[0];
+            test_let_helper(&stmt, t_case.expected_ident);
+
+            if let Statment::Let(stmt) = &program.unwrap().statments[0] {
+                let val = &stmt.value;
+
+                match t_case.expected_value {
+                    Dtype::Str(s) => {
+                        test_lit_expr(&val, s);
+                        return;
+                    }
+                    Dtype::Int(i) => {
+                        test_lit_expr(&val, i);
+                        return;
+                    }
+                    Dtype::Bool(b) => {
+                        test_lit_expr(&val, b);
+                        return;
+                    }
+                };
+            }
+            panic!("Statment is not a Let statment");
         }
     }
     fn test_let_helper(stmt: &Statment, ident: &str) {

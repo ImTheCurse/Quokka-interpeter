@@ -2,7 +2,7 @@ use crate::token::token::{Token, TokenType};
 use crate::Lexer;
 use crate::AST::ast::{
     BlockStatment, Boolen, CallExpression, Expression, FunctionLiteral, Identifier, IfStatment,
-    InfixExpression, IntLiteral, LetStatment, Literal, PrefixExpression, Program, Statment,
+    InfixExpression, IntLiteral, LetStatment, PrefixExpression, Program, ReturnStatment, Statment,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
@@ -348,55 +348,41 @@ impl Parser {
     }
 
     fn prefix_error(&mut self) -> Expression {
-        panic!(
-            "Prefix is incorrect, no prefix function to parse current prefix. got: {}",
-            self.curr_token.literal
-        );
+        let s = "Prefix is incorrect, no prefix function to parse current prefix. got: "
+            .to_string()
+            + &self.curr_token.literal.to_string();
+        self.errors.push(s);
+        Expression::Blank
     }
 
     fn parse_let_statment(&mut self) -> Option<Statment> {
-        //expect_peek() also gets the next token
-        //Current state:
-        //curr_token = let
-        //peek_token = identifier.
-        if self.peek_token.tok_type != TokenType::Ident {
-            self.peek_error(TokenType::Ident);
-            return None;
-        }
-        let ident = Identifier {
-            value: self.peek_token.literal.to_string(),
+        let mut stmt = LetStatment {
+            ident: Identifier {
+                value: "".to_string(),
+            },
+            value: Expression::Blank,
         };
-        self.next_token_parser();
-
-        //State:
-        //curr_token = identifier
-        //peek_token = assignment
-        if self.peek_token.tok_type != TokenType::Assign {
-            self.peek_error(TokenType::Assign);
+        if !self.next_token_is(&TokenType::Ident) {
+            self.next_token_parser();
             return None;
         }
         self.next_token_parser();
 
-        //TODO: we're skipping the expression untill we encounter semicolon.
-        //TODO: Notice to change expression aswell
-        //state:
-        //curr_token = assignment
-        //peek_token = value / expression
-        let val = &self.peek_token.literal;
-        if self.peek_token.tok_type != TokenType::Int(val.parse::<i32>().unwrap()) {
+        stmt.ident = Identifier {
+            value: self.curr_token.literal.clone(),
+        };
+        if !self.next_token_is(&TokenType::Assign) {
+            self.next_token_parser();
             return None;
         }
-        let lit = Literal {
-            value: val.to_string(),
-        };
-        let stmt = LetStatment {
-            ident: ident,
-            value: Expression::Literal(lit),
-        };
-        while self.curr_token.tok_type != TokenType::Semicolon {
+        self.next_token_parser();
+        self.next_token_parser();
+
+        stmt.value = self.parse_expr(Precedence::Lowest)?;
+        if self.next_token_is(&TokenType::Semicolon) {
             self.next_token_parser();
         }
-        return Some(Statment::Let(stmt));
+        Some(Statment::Let(stmt))
     }
 
     pub fn errors(&self) -> Vec<String> {
@@ -414,6 +400,16 @@ impl Parser {
     }
 
     pub fn parse_return_statments(&mut self) -> Option<Statment> {
-        todo!()
+        let mut stmt = ReturnStatment {
+            return_value: Expression::Blank,
+        };
+
+        self.next_token_parser();
+        stmt.return_value = self.parse_expr(Precedence::Lowest)?;
+
+        if self.next_token_is(&TokenType::Semicolon) {
+            self.next_token_parser();
+        }
+        Some(Statment::Return(stmt))
     }
 }
