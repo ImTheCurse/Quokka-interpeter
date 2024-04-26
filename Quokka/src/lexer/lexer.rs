@@ -46,6 +46,7 @@ fn split_special_chars(inp: &str) -> String {
     s = s.replace('<', " < ");
     s = s.replace('>', " > ");
     s = s.replace('!', " ! ");
+    s = s.replace('+', " + ");
     return s;
 }
 
