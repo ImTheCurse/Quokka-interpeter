@@ -1,4 +1,5 @@
-use crate::AST::ast;
+use crate::evaluator::eval::eval;
+use crate::AST::ast::{self, Program};
 use crate::{lexer::lexer::Lexer, parser::parser::Parser};
 use std::io::{self, Write};
 
@@ -28,16 +29,21 @@ fn main() -> io::Result<()> {
             print_parser_errors(parser.errors);
             continue;
         }
-        println!(
-            "{}\n",
-            program
-                .unwrap_or(ast::Program {
-                    statments: Vec::new()
-                })
-                .to_string()
-        );
-        input.clear();
 
+        for s in program
+            .unwrap_or(Program {
+                statments: Vec::new(),
+            })
+            .statments
+            .iter()
+        {
+            let evaluated = eval(s);
+            if evaluated.is_some() {
+                println!("{}", evaluated.unwrap().to_string());
+            }
+        }
+
+        input.clear()
         /*
         let mut tok = lex.next_token();
         while tok.tok_type != TokenType::EOF {
