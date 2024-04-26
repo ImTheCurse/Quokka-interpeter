@@ -3,6 +3,7 @@ use crate::{lexer::lexer::Lexer, parser::parser::Parser};
 use std::io::{self, Write};
 
 pub(crate) mod AST;
+pub(crate) mod evaluator;
 pub(crate) mod lexer;
 pub(crate) mod parser;
 pub(crate) mod token;
