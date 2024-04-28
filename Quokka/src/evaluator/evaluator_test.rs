@@ -21,7 +21,23 @@ mod tests {
             }
         }
 
-        let tests: Vec<_> = vec![Test::new("5", 5), Test::new("10", 10)];
+        let tests: Vec<_> = vec![
+            Test::new("5", 5),
+            Test::new("10", 10),
+            Test::new("-5", -5),
+            Test::new("-10", -10),
+            Test::new("5 + 5 + 5 + 5 - 10", 10),
+            Test::new("2 * 2 * 2 * 2 * 2", 32),
+            Test::new("-50 + 100 -50", 0),
+            Test::new("5 * 2 + 10", 20),
+            Test::new("5 + 2 * 10", 25),
+            Test::new("20 + 2 * -10", 0),
+            Test::new("50 / 2 * 2 + 10", 60),
+            Test::new("2 * (5 + 10)", 30),
+            Test::new("3 * 3 * 3 + 10", 37),
+            Test::new("3 * (3 * 3) + 10", 37),
+            Test::new("(5 + 10 * 2 + 15 / 3) * 2 + -10", 50),
+        ];
 
         for t_case in tests.iter() {
             let evaluated = test_eval_helper(t_case.input.to_string());
