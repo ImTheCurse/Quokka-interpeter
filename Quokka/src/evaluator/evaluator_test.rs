@@ -51,6 +51,35 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_bang_op() {
+        struct Test<'a> {
+            input: &'a str,
+            expected: bool,
+        }
+        impl<'a> Test<'a> {
+            fn new(inp: &'a str, exp: bool) -> Test {
+                Test {
+                    input: inp,
+                    expected: exp,
+                }
+            }
+        }
+
+        let tests = vec![
+            Test::new("!true", false),
+            Test::new("!false", true),
+            Test::new("!5", false),
+            Test::new("!!false", false),
+            Test::new("!!5", true),
+        ];
+
+        for t_case in tests.iter() {
+            let evaluated = test_eval_helper(t_case.input.to_string());
+            test_bool_obj(evaluated.unwrap(), t_case.expected);
+        }
+    }
+
     fn test_bool_obj(obj: Object, expected: bool) {
         if let Object::Boolean(b) = obj {
             if b != expected {
