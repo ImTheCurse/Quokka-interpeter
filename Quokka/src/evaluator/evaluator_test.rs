@@ -59,7 +59,27 @@ mod tests {
             }
         }
 
-        let tests: Vec<_> = vec![Test::new("true", true), Test::new("false", false)];
+        let tests: Vec<_> = vec![
+            Test::new("true", true),
+            Test::new("false", false),
+            Test::new("true == true", true),
+            Test::new("false == false", true),
+            Test::new("true == false", false),
+            Test::new("true != false", true),
+            Test::new("false != true", true),
+            Test::new("(1 < 2) == true", true),
+            Test::new("(1 < 2) == false", false),
+            Test::new("(1 > 2) == true", false),
+            Test::new("(1 > 2) == false", true),
+            Test::new("1 < 2", true),
+            Test::new("1 > 2", false),
+            Test::new("1 < 1", false),
+            Test::new("1 > 1", false),
+            Test::new("1 == 1", true),
+            Test::new("1 != 1", false),
+            Test::new("1 == 2", false),
+            Test::new("1 != 2", true),
+        ];
 
         for t_case in tests.iter() {
             let evaluated = test_eval_helper(t_case.input.to_string());

@@ -8,7 +8,7 @@ where
 {
     fn r#type(&self) -> ObjectType;
 }
-
+#[derive(PartialEq, Eq)]
 pub enum Object {
     Integer(i32),
     Boolean(bool),

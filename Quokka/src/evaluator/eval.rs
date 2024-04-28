@@ -1,6 +1,8 @@
 use crate::evaluator::object::Object;
 use crate::AST::ast::{Expression, LetStatment, ReturnStatment, Statment};
 
+use super::object::Obj;
+
 pub fn eval(stmt: &Statment) -> Option<Object> {
     match stmt {
         Statment::Expr(e) => eval_expr(e),
@@ -36,7 +38,11 @@ pub fn eval_infix_expr(lhs: &Object, rhs: &Object, op: &str) -> Option<Object> {
             return eval_int_infix_expr(*sec, *first, op);
         }
     }
-    None
+    match op {
+        "==" => return Some(Object::Boolean(lhs == rhs)),
+        "!=" => return Some(Object::Boolean(lhs != rhs)),
+        _ => return None,
+    };
 }
 
 pub fn eval_int_infix_expr(lhs: i32, rhs: i32, op: &str) -> Option<Object> {
@@ -50,6 +56,10 @@ pub fn eval_int_infix_expr(lhs: i32, rhs: i32, op: &str) -> Option<Object> {
             return Some(Object::Integer(lhs / rhs));
         }
         "*" => return Some(Object::Integer(lhs * rhs)),
+        "<" => return Some(Object::Boolean(lhs < rhs)),
+        ">" => return Some(Object::Boolean(lhs > rhs)),
+        "==" => return Some(Object::Boolean(lhs == rhs)),
+        "!=" => return Some(Object::Boolean(lhs != rhs)),
         _ => None,
     }
 }
