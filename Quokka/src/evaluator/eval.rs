@@ -11,7 +11,9 @@ pub fn eval(stmt: &Statment) -> Option<Object> {
     match stmt {
         Statment::Expr(e) => eval_expr(e),
         Statment::Let(l) => eval_let_stmt(l),
-        Statment::Return(r) => eval_return_stmt(r),
+        Statment::Return(r) => Some(Object::ReturnValue(Box::new(
+            eval_expr(&r.return_value).unwrap_or(Object::Null),
+        ))),
     }
 }
 pub fn eval_expr(expr: &Expression) -> Option<Object> {
@@ -32,12 +34,12 @@ pub fn eval_expr(expr: &Expression) -> Option<Object> {
                 &infix.operator,
             );
         }
-        Expression::If(ifStmt) => return eval_if_expr(ifStmt),
+        Expression::If(if_stmt) => return Some(eval_if_expr(if_stmt)),
         _ => return None,
     };
 }
 
-pub fn eval_if_expr(stmt: &IfStatment) -> Option<Object> {
+pub fn eval_if_expr(stmt: &IfStatment) -> Object {
     let cond = eval_expr(&stmt.condition);
     if is_truthy(&cond.unwrap()) {
         return eval_statments(&stmt.consequence.stmts);
@@ -51,19 +53,21 @@ pub fn eval_if_expr(stmt: &IfStatment) -> Option<Object> {
                 .stmts,
         );
     }
-    Some(Object::Null)
+    Object::Null
 }
 
-pub fn eval_statments(stmts: &Vec<Statment>) -> Option<Object> {
-    let result = None;
+pub fn eval_statments(stmts: &Vec<Statment>) -> Object {
+    let mut result = Some(Object::Null);
     for stmt in stmts {
-        let result = eval(stmt);
+        result = eval(stmt);
 
         if result.is_some() {
-            return result;
+            if let Object::ReturnValue(v) = result.clone().unwrap_or(Object::Null) {
+                return Object::ReturnValue(v);
+            }
         }
     }
-    result
+    result.unwrap_or(Object::Null)
 }
 
 pub fn is_truthy(obj: &Object) -> bool {
@@ -140,9 +144,5 @@ pub fn eval_minus_prefix(rhs: &Object) -> Option<Object> {
 }
 
 pub fn eval_let_stmt(s: &LetStatment) -> Option<Object> {
-    todo!()
-}
-
-pub fn eval_return_stmt(r: &ReturnStatment) -> Option<Object> {
     todo!()
 }

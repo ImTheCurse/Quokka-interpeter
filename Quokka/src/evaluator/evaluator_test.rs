@@ -44,6 +44,44 @@ mod tests {
             test_int_obj_helper(evaluated.unwrap(), t_case.expected);
         }
     }
+    #[test]
+    fn test_return_statments() {
+        struct Test<'a> {
+            input: &'a str,
+            expected: i32,
+        }
+        impl<'a> Test<'a> {
+            fn new(inp: &'a str, exp: i32) -> Test {
+                Test {
+                    input: inp,
+                    expected: exp,
+                }
+            }
+        }
+
+        let tests = vec![
+            Test::new("return 10;", 10),
+            Test::new("return 10;9;", 10),
+            Test::new("return 2*5;9", 10),
+            Test::new("9;return 2*3;9", 6),
+            Test::new(
+                "
+            if (10 > 1){
+                if(10 > 1){
+                    return 10;
+                }
+            }else
+            {return 1;} ",
+                10,
+            ),
+        ];
+        for t_case in &tests {
+            let evaluated = test_eval_helper(t_case.input.to_string());
+            if let Object::ReturnValue(r) = evaluated.unwrap() {
+                test_int_obj_helper(*r, t_case.expected);
+            }
+        }
+    }
 
     #[test]
     fn test_if_else_expr() {
