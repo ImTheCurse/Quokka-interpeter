@@ -44,6 +44,45 @@ mod tests {
             test_int_obj_helper(evaluated.unwrap(), t_case.expected);
         }
     }
+
+    #[test]
+    fn test_if_else_expr() {
+        struct Test<'a> {
+            input: &'a str,
+            expected: Object,
+        }
+        impl<'a> Test<'a> {
+            fn new(inp: &'a str, exp: Object) -> Test {
+                Test {
+                    input: inp,
+                    expected: exp,
+                }
+            }
+        }
+        let tests = vec![
+            Test::new("if (true){ 10 }", Object::Integer(10)),
+            Test::new("if (false){ 10 }", Object::Null),
+            Test::new("if (1){ 10 }", Object::Integer(10)),
+            Test::new("if (1 < 2){ 10 }", Object::Integer(10)),
+            Test::new("if (1 > 2){ 10 }", Object::Null),
+            Test::new("if (1 > 2){ 10 } else { 20 }", Object::Integer(20)),
+            Test::new("if (1 < 2){ 10 } else { 20 }", Object::Integer(10)),
+        ];
+
+        for t_case in &tests {
+            let evaluated = test_eval_helper(t_case.input.to_string());
+            if let Object::Integer(i) = t_case.expected {
+                test_int_obj_helper(evaluated.unwrap(), i);
+                continue;
+            }
+            if let Object::Null = t_case.expected {
+                test_null_obj(evaluated.unwrap());
+                continue;
+            }
+            panic!("Object is not null or an integer");
+        }
+    }
+
     #[test]
     fn test_eval_bool_expr() {
         struct Test<'a> {
@@ -114,6 +153,13 @@ mod tests {
             let evaluated = test_eval_helper(t_case.input.to_string());
             test_bool_obj(evaluated.unwrap(), t_case.expected);
         }
+    }
+
+    fn test_null_obj(obj: Object) -> bool {
+        if obj != Object::Null {
+            return false;
+        }
+        true
     }
 
     fn test_bool_obj(obj: Object, expected: bool) {

@@ -6,7 +6,7 @@ pub trait Obj<T>
 where
     T: Display,
 {
-    fn r#type(&self) -> ObjectType;
+    fn Type(&self) -> ObjectType;
 }
 #[derive(PartialEq, Eq)]
 pub enum Object {
@@ -15,7 +15,7 @@ pub enum Object {
     Null,
 }
 impl<T: std::fmt::Display> Obj<T> for Object {
-    fn r#type(&self) -> ObjectType {
+    fn Type(&self) -> ObjectType {
         match *self {
             Object::Integer(_) => "INTEGER".to_string(),
             Object::Boolean(_) => "BOOLEAN".to_string(),

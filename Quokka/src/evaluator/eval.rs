@@ -1,5 +1,9 @@
+use std::borrow::Borrow;
+
 use crate::evaluator::object::Object;
-use crate::AST::ast::{Expression, LetStatment, ReturnStatment, Statment};
+use crate::AST::ast::{
+    BlockStatment, Expression, IfStatment, LetStatment, ReturnStatment, Statment,
+};
 
 use super::object::Obj;
 
@@ -28,8 +32,50 @@ pub fn eval_expr(expr: &Expression) -> Option<Object> {
                 &infix.operator,
             );
         }
+        Expression::If(ifStmt) => return eval_if_expr(ifStmt),
         _ => return None,
     };
+}
+
+pub fn eval_if_expr(stmt: &IfStatment) -> Option<Object> {
+    let cond = eval_expr(&stmt.condition);
+    if is_truthy(&cond.unwrap()) {
+        return eval_statments(&stmt.consequence.stmts);
+    }
+    if stmt.alternative.is_some() {
+        return eval_statments(
+            &stmt
+                .alternative
+                .clone()
+                .unwrap_or(BlockStatment { stmts: Vec::new() })
+                .stmts,
+        );
+    }
+    Some(Object::Null)
+}
+
+pub fn eval_statments(stmts: &Vec<Statment>) -> Option<Object> {
+    let result = None;
+    for stmt in stmts {
+        let result = eval(stmt);
+
+        if result.is_some() {
+            return result;
+        }
+    }
+    result
+}
+
+pub fn is_truthy(obj: &Object) -> bool {
+    if let Object::Integer(i) = obj {
+        if i.is_positive() {
+            return true;
+        }
+    }
+    if let Object::Boolean(b) = obj {
+        return *b;
+    }
+    return false;
 }
 
 pub fn eval_infix_expr(lhs: &Object, rhs: &Object, op: &str) -> Option<Object> {
