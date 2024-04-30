@@ -1,4 +1,5 @@
 use crate::evaluator::eval::eval;
+use crate::evaluator::object::Object;
 use crate::AST::ast::{self, Program};
 use crate::{lexer::lexer::Lexer, parser::parser::Parser};
 use std::io::{self, Write};
@@ -39,7 +40,13 @@ fn main() -> io::Result<()> {
         {
             let evaluated = eval(s);
             if evaluated.is_some() {
-                println!("{}", evaluated.unwrap().to_string());
+                println!("{}", evaluated.clone().unwrap().to_string());
+                if let Object::Error(_) = evaluated.clone().unwrap() {
+                    break;
+                }
+                if let Object::ReturnValue(_) = evaluated.clone().unwrap() {
+                    break;
+                }
             }
         }
 

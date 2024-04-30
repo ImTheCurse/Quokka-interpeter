@@ -44,6 +44,50 @@ mod tests {
             test_int_obj_helper(evaluated.unwrap(), t_case.expected);
         }
     }
+
+    #[test]
+    fn test_error_handling() {
+        struct Test<'a> {
+            input: &'a str,
+            expected: &'a str,
+        }
+        impl<'a> Test<'a> {
+            fn new(inp: &'a str, exp: &'a str) -> Test<'a> {
+                Test {
+                    input: inp,
+                    expected: exp,
+                }
+            }
+        }
+
+        let tests = vec![
+            Test::new("5 + true;", "type mismatch: INTEGER + BOOLEAN"),
+            Test::new("5 + true;5;", "type mismatch: INTEGER + BOOLEAN"),
+            Test::new("-true", "unknown operator: - BOOLEAN"),
+            Test::new("true + false;", "unknown operator: BOOLEAN + BOOLEAN"),
+            Test::new("5;true + false;5", "unknown operator: BOOLEAN + BOOLEAN"),
+            Test::new(
+                "if (10 > 1){true + false;}",
+                "unknown operator: BOOLEAN + BOOLEAN",
+            ),
+        ];
+
+        for t_case in &tests {
+            let evaluated = test_eval_helper(t_case.input.to_string());
+
+            if let Object::Error(err) = evaluated.unwrap() {
+                if t_case.expected != err {
+                    panic!(
+                        "Unexpected error message, Expected: {}, Got: {}",
+                        t_case.expected, err
+                    );
+                }
+                continue;
+            }
+            panic!("Object is not an error object.");
+        }
+    }
+
     #[test]
     fn test_return_statments() {
         struct Test<'a> {
@@ -225,7 +269,21 @@ mod tests {
         if program.is_none() {
             panic!("Paniced @ parse_program() - no program exists.")
         }
-        return eval(&program.unwrap().statments[0]);
+        let mut evaluated = eval(&program.clone().unwrap().statments[0]);
+        if &program.clone().unwrap().statments.len() > &1 {
+            let mut i = 0;
+            for _ in &program.clone().unwrap().statments {
+                evaluated = eval(&program.clone().unwrap().statments[i]);
+                i += 1;
+                if let Object::ReturnValue(_) = evaluated.clone().unwrap() {
+                    return evaluated;
+                }
+                if let Object::Error(_) = evaluated.clone().unwrap() {
+                    return evaluated;
+                }
+            }
+        }
+        return evaluated;
     }
 
     fn test_int_obj_helper(obj: Object, expected: i32) {

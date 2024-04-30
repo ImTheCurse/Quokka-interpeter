@@ -2,10 +2,7 @@ use std::fmt::Display;
 
 pub type ObjectType = String;
 
-pub trait Obj<T>
-where
-    T: Display,
-{
+pub trait Obj {
     fn Type(&self) -> ObjectType;
 }
 #[derive(Clone, PartialEq, Eq)]
@@ -14,14 +11,16 @@ pub enum Object {
     Boolean(bool),
     Null,
     ReturnValue(Box<Object>),
+    Error(String),
 }
-impl<T: std::fmt::Display> Obj<T> for Object {
+impl Obj for Object {
     fn Type(&self) -> ObjectType {
         match *self {
             Object::Integer(_) => "INTEGER".to_string(),
             Object::Boolean(_) => "BOOLEAN".to_string(),
             Object::Null => "NULL".to_string(),
             Object::ReturnValue(_) => "RETURN_VALUE".to_string(),
+            Object::Error(_) => "ERROR".to_string(),
         }
     }
 }
@@ -33,6 +32,7 @@ impl Display for Object {
             Object::Boolean(b) => write!(f, "{}", b),
             Object::Null => write!(f, "{}", "null"),
             Object::ReturnValue(val) => write!(f, "{}", val),
+            Object::Error(err) => write!(f, "Error: {}", err),
         }
     }
 }

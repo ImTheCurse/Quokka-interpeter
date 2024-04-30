@@ -6,42 +6,37 @@ use crate::AST::ast::{
 };
 
 use super::object::Obj;
+use crate::new_error;
 
 pub fn eval(stmt: &Statment) -> Option<Object> {
     match stmt {
-        Statment::Expr(e) => eval_expr(e),
+        Statment::Expr(e) => Some(eval_expr(e)),
         Statment::Let(l) => eval_let_stmt(l),
-        Statment::Return(r) => Some(Object::ReturnValue(Box::new(
-            eval_expr(&r.return_value).unwrap_or(Object::Null),
-        ))),
+        Statment::Return(r) => Some(Object::ReturnValue(Box::new(eval_expr(&r.return_value)))),
     }
 }
-pub fn eval_expr(expr: &Expression) -> Option<Object> {
+fn eval_expr(expr: &Expression) -> Object {
     match expr {
-        Expression::Int(i) => return Some(Object::Integer(i.value)),
-        Expression::BoolenExpr(b) => return Some(Object::Boolean(b.value)),
+        Expression::Int(i) => return Object::Integer(i.value),
+        Expression::BoolenExpr(b) => return Object::Boolean(b.value),
         Expression::Prefix(pre) => {
             let right = eval_expr(&pre.rhs);
-            return eval_prefix_expr(&pre.operator, &right.unwrap_or(Object::Null));
+            return eval_prefix_expr(&pre.operator, &right);
         }
         Expression::Infix(infix) => {
             let lhs = eval_expr(&infix.lhs);
             let rhs = eval_expr(&infix.rhs);
 
-            return eval_infix_expr(
-                &lhs.unwrap_or(Object::Null),
-                &rhs.unwrap_or(Object::Null),
-                &infix.operator,
-            );
+            return eval_infix_expr(&lhs, &rhs, &infix.operator);
         }
-        Expression::If(if_stmt) => return Some(eval_if_expr(if_stmt)),
-        _ => return None,
+        Expression::If(if_stmt) => return eval_if_expr(if_stmt),
+        _ => return Object::Error("unknown expression, @eval_expr".to_string()),
     };
 }
 
-pub fn eval_if_expr(stmt: &IfStatment) -> Object {
+fn eval_if_expr(stmt: &IfStatment) -> Object {
     let cond = eval_expr(&stmt.condition);
-    if is_truthy(&cond.unwrap()) {
+    if is_truthy(&cond) {
         return eval_statments(&stmt.consequence.stmts);
     }
     if stmt.alternative.is_some() {
@@ -56,7 +51,7 @@ pub fn eval_if_expr(stmt: &IfStatment) -> Object {
     Object::Null
 }
 
-pub fn eval_statments(stmts: &Vec<Statment>) -> Object {
+fn eval_statments(stmts: &Vec<Statment>) -> Object {
     let mut result = Some(Object::Null);
     for stmt in stmts {
         result = eval(stmt);
@@ -65,12 +60,15 @@ pub fn eval_statments(stmts: &Vec<Statment>) -> Object {
             if let Object::ReturnValue(v) = result.clone().unwrap_or(Object::Null) {
                 return Object::ReturnValue(v);
             }
+            if let Object::Error(err) = result.clone().unwrap_or(Object::Null) {
+                return Object::Error(err);
+            }
         }
     }
     result.unwrap_or(Object::Null)
 }
 
-pub fn is_truthy(obj: &Object) -> bool {
+fn is_truthy(obj: &Object) -> bool {
     if let Object::Integer(i) = obj {
         if i.is_positive() {
             return true;
@@ -82,67 +80,109 @@ pub fn is_truthy(obj: &Object) -> bool {
     return false;
 }
 
-pub fn eval_infix_expr(lhs: &Object, rhs: &Object, op: &str) -> Option<Object> {
+fn eval_infix_expr(lhs: &Object, rhs: &Object, op: &str) -> Object {
     if let Object::Integer(first) = rhs {
         if let Object::Integer(sec) = lhs {
             return eval_int_infix_expr(*sec, *first, op);
         }
     }
+    if lhs.Type() != rhs.Type() {
+        return create_new_error(new_error!(
+            "type mismatch:".to_string(),
+            lhs.Type(),
+            op.to_string(),
+            rhs.Type()
+        ));
+    }
     match op {
-        "==" => return Some(Object::Boolean(lhs == rhs)),
-        "!=" => return Some(Object::Boolean(lhs != rhs)),
-        _ => return None,
+        "==" => return Object::Boolean(lhs == rhs),
+        "!=" => return Object::Boolean(lhs != rhs),
+        _ => {
+            return create_new_error(new_error!(
+                "unknown operator:".to_string(),
+                lhs.Type(),
+                op.to_string(),
+                rhs.Type()
+            ));
+        }
     };
 }
 
-pub fn eval_int_infix_expr(lhs: i32, rhs: i32, op: &str) -> Option<Object> {
+fn eval_int_infix_expr(lhs: i32, rhs: i32, op: &str) -> Object {
     match op {
-        "+" => return Some(Object::Integer(lhs + rhs)),
-        "-" => return Some(Object::Integer(lhs - rhs)),
+        "+" => Object::Integer(lhs + rhs),
+        "-" => Object::Integer(lhs - rhs),
         "/" => {
             if rhs == 0 && lhs == 0 || rhs == 0 && lhs != 0 {
-                return None;
+                return Object::Error("Division by zero is not allowed.".to_string());
             }
-            return Some(Object::Integer(lhs / rhs));
+            return Object::Integer(lhs / rhs);
         }
-        "*" => return Some(Object::Integer(lhs * rhs)),
-        "<" => return Some(Object::Boolean(lhs < rhs)),
-        ">" => return Some(Object::Boolean(lhs > rhs)),
-        "==" => return Some(Object::Boolean(lhs == rhs)),
-        "!=" => return Some(Object::Boolean(lhs != rhs)),
-        _ => None,
+        "*" => Object::Integer(lhs * rhs),
+        "<" => Object::Boolean(lhs < rhs),
+        ">" => Object::Boolean(lhs > rhs),
+        "==" => Object::Boolean(lhs == rhs),
+        "!=" => Object::Boolean(lhs != rhs),
+        _ => {
+            return create_new_error(new_error!(
+                "unknown operator: ",
+                lhs.to_string(),
+                op.to_string(),
+                rhs.to_string()
+            ))
+        }
     }
 }
 
-pub fn eval_prefix_expr(op: &str, rhs: &Object) -> Option<Object> {
+fn eval_prefix_expr(op: &str, rhs: &Object) -> Object {
     match op {
         "!" => return eval_bang_expr(&rhs),
         "-" => return eval_minus_prefix(&rhs),
-        _ => None,
+        _ => create_new_error(new_error!("unknown operator: ", op.to_string(), rhs.Type())),
     }
 }
 
-pub fn eval_bang_expr(rhs: &Object) -> Option<Object> {
+fn eval_bang_expr(rhs: &Object) -> Object {
     match rhs {
-        Object::Boolean(b) => return Some(Object::Boolean(!b)),
+        Object::Boolean(b) => return Object::Boolean(!b),
         Object::Integer(val) => {
-            return Some(Object::Boolean(if val.is_positive() {
-                false
-            } else {
-                true
-            }));
+            return Object::Boolean(if val.is_positive() { false } else { true });
         }
-        _ => None,
+
+        _ => create_new_error(new_error!(
+            "unknown operator: ",
+            "!".to_string(),
+            rhs.Type()
+        )),
     }
 }
 
-pub fn eval_minus_prefix(rhs: &Object) -> Option<Object> {
+fn eval_minus_prefix(rhs: &Object) -> Object {
     if let Object::Integer(i) = rhs {
-        return Some(Object::Integer(-i));
+        return Object::Integer(-i);
     }
-    None
+    create_new_error(new_error!("unknown operator: -".to_string(), rhs.Type()))
 }
 
-pub fn eval_let_stmt(s: &LetStatment) -> Option<Object> {
+fn eval_let_stmt(s: &LetStatment) -> Option<Object> {
     todo!()
+}
+
+#[macro_use]
+mod error_macros {
+    #[macro_export]
+    macro_rules! new_error {
+        ($s:expr) => {
+            $s
+        };
+        ($s:expr,$($additonal_expr:expr),+) => {
+            {
+                let out : String = format!("{} {}",$s,new_error!($($additonal_expr),+));
+                out
+            }
+        }
+    }
+}
+fn create_new_error(message: String) -> Object {
+    Object::Error(message)
 }
