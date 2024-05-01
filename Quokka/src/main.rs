@@ -1,6 +1,6 @@
 use crate::evaluator::eval::eval;
-use crate::evaluator::object::Object;
-use crate::AST::ast::{self, Program};
+use crate::evaluator::object::{Enviornment, Object};
+use crate::AST::ast::Program;
 use crate::{lexer::lexer::Lexer, parser::parser::Parser};
 use std::io::{self, Write};
 
@@ -12,6 +12,8 @@ pub(crate) mod token;
 
 fn main() -> io::Result<()> {
     let mut input = String::new();
+    let mut env = Enviornment::new();
+
     loop {
         print!(">> ");
         io::stdout().flush().unwrap();
@@ -38,7 +40,7 @@ fn main() -> io::Result<()> {
             .statments
             .iter()
         {
-            let evaluated = eval(s);
+            let evaluated = eval(s, &mut env);
             if evaluated.is_some() {
                 println!("{}", evaluated.clone().unwrap().to_string());
                 if let Object::Error(_) = evaluated.clone().unwrap() {

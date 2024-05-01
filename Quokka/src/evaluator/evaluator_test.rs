@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use self::object::Object;
+    use self::object::{Enviornment, Object};
     use crate::evaluator::eval::eval;
     use crate::evaluator::*;
     use crate::lexer::lexer::Lexer;
@@ -70,6 +70,7 @@ mod tests {
                 "if (10 > 1){true + false;}",
                 "unknown operator: BOOLEAN + BOOLEAN",
             ),
+            Test::new("foobar;", "identifier not found: foobar"),
         ];
 
         for t_case in &tests {
@@ -85,6 +86,35 @@ mod tests {
                 continue;
             }
             panic!("Object is not an error object.");
+        }
+    }
+
+    #[test]
+    fn test_let_statments() {
+        struct Test<'a> {
+            input: &'a str,
+            expected: i32,
+        }
+        impl<'a> Test<'a> {
+            fn new(inp: &'a str, exp: i32) -> Test {
+                Test {
+                    input: inp,
+                    expected: exp,
+                }
+            }
+        }
+        let tests = vec![
+            Test::new("let x = 5;x;", 5),
+            Test::new("let y = 5 *5;y;", 25),
+            Test::new("let x = 5; let y = x; y;", 5),
+            Test::new("let x = 5; let y = x; let c = y + 5;c;", 10),
+        ];
+
+        for t_case in tests.iter() {
+            test_int_obj_helper(
+                test_eval_helper(t_case.input.to_string()).unwrap(),
+                t_case.expected,
+            );
         }
     }
 
@@ -269,11 +299,12 @@ mod tests {
         if program.is_none() {
             panic!("Paniced @ parse_program() - no program exists.")
         }
-        let mut evaluated = eval(&program.clone().unwrap().statments[0]);
+        let mut env = Enviornment::new();
+        let mut evaluated = eval(&program.clone().unwrap().statments[0], &mut env);
         if &program.clone().unwrap().statments.len() > &1 {
             let mut i = 0;
             for _ in &program.clone().unwrap().statments {
-                evaluated = eval(&program.clone().unwrap().statments[i]);
+                evaluated = eval(&program.clone().unwrap().statments[i], &mut env);
                 i += 1;
                 if let Object::ReturnValue(_) = evaluated.clone().unwrap() {
                     return evaluated;

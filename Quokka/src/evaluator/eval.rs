@@ -1,43 +1,47 @@
-use std::borrow::Borrow;
-
 use crate::evaluator::object::Object;
-use crate::AST::ast::{
-    BlockStatment, Expression, IfStatment, LetStatment, ReturnStatment, Statment,
-};
+use crate::AST::ast::{BlockStatment, Expression, Identifier, IfStatment, LetStatment, Statment};
 
-use super::object::Obj;
+use super::object::{Enviornment, Obj};
 use crate::new_error;
 
-pub fn eval(stmt: &Statment) -> Option<Object> {
+pub fn eval(stmt: &Statment, env: &mut Enviornment) -> Option<Object> {
     match stmt {
-        Statment::Expr(e) => Some(eval_expr(e)),
-        Statment::Let(l) => eval_let_stmt(l),
-        Statment::Return(r) => Some(Object::ReturnValue(Box::new(eval_expr(&r.return_value)))),
+        Statment::Expr(e) => Some(eval_expr(e, env)),
+        Statment::Let(l) => eval_let_stmt(l, env),
+        Statment::Return(r) => Some(Object::ReturnValue(Box::new(eval_expr(
+            &r.return_value,
+            env,
+        )))),
     }
 }
-fn eval_expr(expr: &Expression) -> Object {
+fn eval_expr(expr: &Expression, env: &mut Enviornment) -> Object {
     match expr {
         Expression::Int(i) => return Object::Integer(i.value),
         Expression::BoolenExpr(b) => return Object::Boolean(b.value),
         Expression::Prefix(pre) => {
-            let right = eval_expr(&pre.rhs);
+            let right = eval_expr(&pre.rhs, env);
             return eval_prefix_expr(&pre.operator, &right);
         }
         Expression::Infix(infix) => {
-            let lhs = eval_expr(&infix.lhs);
-            let rhs = eval_expr(&infix.rhs);
+            let lhs = eval_expr(&infix.lhs, env);
+            let rhs = eval_expr(&infix.rhs, env);
 
             return eval_infix_expr(&lhs, &rhs, &infix.operator);
         }
-        Expression::If(if_stmt) => return eval_if_expr(if_stmt),
+        Expression::If(if_stmt) => return eval_if_expr(if_stmt, env),
+        Expression::Identifier(ident) => return eval_ident(ident.clone(), env),
         _ => return Object::Error("unknown expression, @eval_expr".to_string()),
     };
 }
 
-fn eval_if_expr(stmt: &IfStatment) -> Object {
-    let cond = eval_expr(&stmt.condition);
+fn eval_ident(ident: Identifier, env: &mut Enviornment) -> Object {
+    env.get(&ident.to_string())
+}
+
+fn eval_if_expr(stmt: &IfStatment, env: &mut Enviornment) -> Object {
+    let cond = eval_expr(&stmt.condition, env);
     if is_truthy(&cond) {
-        return eval_statments(&stmt.consequence.stmts);
+        return eval_statments(&stmt.consequence.stmts, env);
     }
     if stmt.alternative.is_some() {
         return eval_statments(
@@ -46,15 +50,16 @@ fn eval_if_expr(stmt: &IfStatment) -> Object {
                 .clone()
                 .unwrap_or(BlockStatment { stmts: Vec::new() })
                 .stmts,
+            env,
         );
     }
     Object::Null
 }
 
-fn eval_statments(stmts: &Vec<Statment>) -> Object {
+fn eval_statments(stmts: &Vec<Statment>, env: &mut Enviornment) -> Object {
     let mut result = Some(Object::Null);
     for stmt in stmts {
-        result = eval(stmt);
+        result = eval(stmt, env);
 
         if result.is_some() {
             if let Object::ReturnValue(v) = result.clone().unwrap_or(Object::Null) {
@@ -164,8 +169,13 @@ fn eval_minus_prefix(rhs: &Object) -> Object {
     create_new_error(new_error!("unknown operator: -".to_string(), rhs.Type()))
 }
 
-fn eval_let_stmt(s: &LetStatment) -> Option<Object> {
-    todo!()
+fn eval_let_stmt(s: &LetStatment, env: &mut Enviornment) -> Option<Object> {
+    let value = eval_expr(&s.value, env);
+    if let Object::Error(_) = &value {
+        return Some(value);
+    }
+    env.set(s.ident.to_string(), &value);
+    Some(value)
 }
 
 #[macro_use]

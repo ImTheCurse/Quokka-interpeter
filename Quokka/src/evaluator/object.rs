@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Display;
 
 pub type ObjectType = String;
@@ -13,6 +14,29 @@ pub enum Object {
     ReturnValue(Box<Object>),
     Error(String),
 }
+
+pub struct Enviornment {
+    store: HashMap<String, Object>,
+}
+
+impl Enviornment {
+    pub fn new() -> Enviornment {
+        Enviornment {
+            store: HashMap::new(),
+        }
+    }
+
+    pub fn get(&self, ident: &String) -> Object {
+        let obj = self.store.get(ident);
+        obj.unwrap_or(&Object::Error(format!("identifier not found: {}", ident)))
+            .clone()
+    }
+
+    pub fn set(&mut self, ident: String, obj: &Object) {
+        self.store.insert(ident, obj.clone());
+    }
+}
+
 impl Obj for Object {
     fn Type(&self) -> ObjectType {
         match *self {
