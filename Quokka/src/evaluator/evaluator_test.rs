@@ -90,6 +90,35 @@ mod tests {
     }
 
     #[test]
+    fn test_func_obj() {
+        let input = "fn(x){x + 2;};";
+        let evaluated = test_eval_helper(input.to_string());
+
+        if let Object::Function(f, _) = evaluated.unwrap() {
+            if f.params.len() != 1 {
+                let mut params = Vec::new();
+                for param in &f.params {
+                    params.push(param.to_string());
+                }
+                panic!(
+                    "function has wrong paramaters. Parameters: {}",
+                    params.join(",")
+                );
+            }
+
+            if f.params[0].to_string() != "x" {
+                panic!("parameter is not 'x'. Got: {}", f.params[0]);
+            }
+            let expected = "(x + 2)";
+            if f.body.to_string() != expected {
+                panic!("body is not {}, Got: {}", expected, f.body.to_string());
+            }
+            return;
+        }
+        panic!("object is not a function.");
+    }
+
+    #[test]
     fn test_let_statments() {
         struct Test<'a> {
             input: &'a str,

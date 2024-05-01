@@ -30,6 +30,7 @@ fn main() -> io::Result<()> {
 
         if parser.errors().len() != 0 {
             print_parser_errors(parser.errors);
+            input.clear();
             continue;
         }
 

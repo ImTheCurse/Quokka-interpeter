@@ -30,8 +30,9 @@ fn eval_expr(expr: &Expression, env: &mut Enviornment) -> Object {
         }
         Expression::If(if_stmt) => return eval_if_expr(if_stmt, env),
         Expression::Identifier(ident) => return eval_ident(ident.clone(), env),
+        Expression::Func(f) => return Object::Function(f.clone(), env.clone()),
         _ => return Object::Error("unknown expression, @eval_expr".to_string()),
-    };
+    }
 }
 
 fn eval_ident(ident: Identifier, env: &mut Enviornment) -> Object {
