@@ -1,7 +1,8 @@
+use crate::AST::ast::FunctionLiteral;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::Display;
-use std::{collections::HashMap, fmt::write};
-
-use crate::AST::ast::{BlockStatment, FunctionLiteral, Identifier};
+use std::rc::Rc;
 
 pub type ObjectType = String;
 
@@ -21,23 +22,39 @@ pub enum Object {
 #[derive(PartialEq, Eq, Clone)]
 pub struct Enviornment {
     store: HashMap<String, Object>,
+    outer: Option<Rc<RefCell<Enviornment>>>,
 }
 
 impl Enviornment {
     pub fn new() -> Enviornment {
         Enviornment {
             store: HashMap::new(),
+            outer: None,
         }
     }
 
     pub fn get(&self, ident: &String) -> Object {
         let obj = self.store.get(ident);
-        obj.unwrap_or(&Object::Error(format!("identifier not found: {}", ident)))
-            .clone()
+        match obj {
+            Some(val) => val.clone(),
+            None => match self.outer {
+                Some(ref out) => Rc::try_unwrap(out.clone())
+                    .unwrap_or(RefCell::new(Enviornment::new()))
+                    .borrow_mut()
+                    .get(ident),
+                None => Object::Error(format!("identifier not found: {}", ident)),
+            },
+        }
     }
 
     pub fn set(&mut self, ident: String, obj: &Object) {
         self.store.insert(ident, obj.clone());
+    }
+
+    pub fn new_enclosed_env(outer: &mut Enviornment) -> Enviornment {
+        let mut env = Enviornment::new();
+        env.outer = Some(Rc::new(RefCell::new(outer.clone())));
+        return env;
     }
 }
 

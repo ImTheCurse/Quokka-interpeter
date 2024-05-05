@@ -46,6 +46,38 @@ mod tests {
     }
 
     #[test]
+    fn test_func_application() {
+        struct Test<'a> {
+            input: &'a str,
+            expected: i32,
+        }
+        impl<'a> Test<'a> {
+            fn new(inp: &'a str, exp: i32) -> Test<'a> {
+                Test {
+                    input: inp,
+                    expected: exp,
+                }
+            }
+        }
+
+        let tests = vec![
+            Test::new("let identity = fn(x){x;}; identity(5);", 5),
+            Test::new("let identity = fn(x){return x;}; identity(5);", 5),
+            Test::new("let double = fn(x){x * 2;}; double(5);", 10),
+            Test::new("let add = fn(x,y){x + y;}; add(5,5);", 10),
+            Test::new("let add = fn(x,y){x + y;}; add(5 + 5,add(5,5));", 20),
+            Test::new("fn(x){x;}(5)", 5),
+        ];
+
+        for t_case in tests.iter() {
+            test_int_obj_helper(
+                test_eval_helper(t_case.input.to_string()).unwrap(),
+                t_case.expected,
+            );
+        }
+    }
+
+    #[test]
     fn test_error_handling() {
         struct Test<'a> {
             input: &'a str,

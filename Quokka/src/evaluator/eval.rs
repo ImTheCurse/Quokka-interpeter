@@ -31,8 +31,56 @@ fn eval_expr(expr: &Expression, env: &mut Enviornment) -> Object {
         Expression::If(if_stmt) => return eval_if_expr(if_stmt, env),
         Expression::Identifier(ident) => return eval_ident(ident.clone(), env),
         Expression::Func(f) => return Object::Function(f.clone(), env.clone()),
+        Expression::Call(c) => {
+            let function = eval_expr(&c.function, env);
+            let args = eval_expressions(&c.arguments, env);
+            if c.arguments.len() == 1 && matches!(&args[0], Object::Error(_)) {
+                return args[0].clone();
+            }
+            return apply_func(&function, args);
+        }
         _ => return Object::Error("unknown expression, @eval_expr".to_string()),
     }
+}
+
+fn apply_func(func: &Object, args: Vec<Object>) -> Object {
+    if let Object::Function(f, _) = func {
+        let mut extended_env = extened_func_env(func, args);
+        let evaluated = eval_statments(&f.body.stmts, &mut extended_env);
+        return unwrap_return_value(evaluated);
+    }
+    return Object::Error(format!("object is not a function. Got:{}", func.Type()));
+}
+
+fn unwrap_return_value(obj: Object) -> Object {
+    if let Object::ReturnValue(r) = obj {
+        return *r;
+    }
+    obj
+}
+
+fn extened_func_env(func: &Object, args: Vec<Object>) -> Enviornment {
+    if let Object::Function(f, env) = func {
+        let mut e = Enviornment::new_enclosed_env(&mut env.clone());
+
+        for (i, param) in f.params.iter().enumerate() {
+            e.set(param.to_string(), &args[i]);
+        }
+        return e;
+    }
+    return Enviornment::new();
+}
+
+fn eval_expressions(exp: &Vec<Expression>, env: &mut Enviornment) -> Vec<Object> {
+    let mut res = Vec::new();
+    for e in exp {
+        let eval = eval_expr(e, env);
+        if let Object::Error(e) = eval {
+            return vec![Object::Error(e)];
+        }
+        res.push(eval);
+    }
+    return res;
 }
 
 fn eval_ident(ident: Identifier, env: &mut Enviornment) -> Object {
