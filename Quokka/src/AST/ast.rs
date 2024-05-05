@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::token::token::TokenType;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Expression {
     Identifier(Identifier),
     Literal(Literal),
@@ -16,7 +16,7 @@ pub enum Expression {
     Blank,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Statment {
     Let(LetStatment),
     Return(ReturnStatment),
@@ -28,57 +28,57 @@ pub struct Program {
     pub statments: Vec<Statment>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Literal {
     pub value: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct IntLiteral {
     pub value: i32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Boolen {
     pub value: bool,
     pub tok_type: TokenType,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct LetStatment {
     pub ident: Identifier,
     pub value: Expression,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Identifier {
     pub value: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ReturnStatment {
     pub return_value: Expression,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct IfStatment {
     pub condition: Expression,
     pub consequence: BlockStatment,
     pub alternative: Option<BlockStatment>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct BlockStatment {
     pub stmts: Vec<Statment>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct FunctionLiteral {
     pub params: Vec<Identifier>,
     pub body: BlockStatment,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CallExpression {
     pub arguments: Vec<Expression>,
     pub function: Expression,
@@ -89,13 +89,14 @@ pub struct ExpressionStatment {
     pub expr: Expression,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct PrefixExpression {
     pub tok_type: TokenType,
     pub operator: String,
     pub rhs: Expression,
 }
-#[derive(Clone)]
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct InfixExpression {
     pub tok_type: TokenType,
     pub lhs: Expression,

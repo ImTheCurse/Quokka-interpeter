@@ -1,14 +1,19 @@
-use crate::AST::ast;
+use crate::evaluator::eval::eval;
+use crate::evaluator::object::{Enviornment, Object};
+use crate::AST::ast::Program;
 use crate::{lexer::lexer::Lexer, parser::parser::Parser};
 use std::io::{self, Write};
 
 pub(crate) mod AST;
+pub(crate) mod evaluator;
 pub(crate) mod lexer;
 pub(crate) mod parser;
 pub(crate) mod token;
 
 fn main() -> io::Result<()> {
     let mut input = String::new();
+    let mut env = Enviornment::new();
+
     loop {
         print!(">> ");
         io::stdout().flush().unwrap();
@@ -25,18 +30,30 @@ fn main() -> io::Result<()> {
 
         if parser.errors().len() != 0 {
             print_parser_errors(parser.errors);
+            input.clear();
             continue;
         }
-        println!(
-            "{}\n",
-            program
-                .unwrap_or(ast::Program {
-                    statments: Vec::new()
-                })
-                .to_string()
-        );
-        input.clear();
 
+        for s in program
+            .unwrap_or(Program {
+                statments: Vec::new(),
+            })
+            .statments
+            .iter()
+        {
+            let evaluated = eval(s, &mut env);
+            if evaluated.is_some() {
+                println!("{}", evaluated.clone().unwrap().to_string());
+                if let Object::Error(_) = evaluated.clone().unwrap() {
+                    break;
+                }
+                if let Object::ReturnValue(_) = evaluated.clone().unwrap() {
+                    break;
+                }
+            }
+        }
+
+        input.clear()
         /*
         let mut tok = lex.next_token();
         while tok.tok_type != TokenType::EOF {
