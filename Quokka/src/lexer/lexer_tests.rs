@@ -181,7 +181,10 @@ mod tests {
                         }
 
                         10 == 10;
-                        10 != 9;";
+                        10 != 9;
+                        'foobar'
+                        'foo bar'
+                        ";
         let vec: Vec<(TokenType, &str)> = vec![
             (TokenType::Let, "let"),
             (TokenType::Ident, "five"),
@@ -254,6 +257,8 @@ mod tests {
             (TokenType::NotEQ, "!="),
             (TokenType::Int(9), "9"),
             (TokenType::Semicolon, ";"),
+            (TokenType::Str("foobar".into()), "foobar"),
+            (TokenType::Str("foo bar".into()), "foo bar"),
         ];
 
         let mut x = Lexer {

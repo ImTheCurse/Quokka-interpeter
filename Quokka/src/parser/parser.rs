@@ -308,7 +308,7 @@ impl Parser {
     fn parse_infix_expr(&mut self, left: &Expression) -> Expression {
         let curr_expr = Expression::Blank;
         let mut infix = InfixExpression {
-            tok_type: self.curr_token.tok_type,
+            tok_type: self.curr_token.tok_type.clone(),
             operator: self.curr_token.literal.clone(),
             lhs: left.clone(),
             rhs: curr_expr,
@@ -322,7 +322,7 @@ impl Parser {
     fn parse_prefix_expr(&mut self) -> Expression {
         let current_expr = Expression::Blank;
         let mut prefix_expr = PrefixExpression {
-            tok_type: self.curr_token.tok_type,
+            tok_type: self.curr_token.tok_type.clone(),
             operator: self.curr_token.literal.clone(),
             rhs: current_expr,
         };
