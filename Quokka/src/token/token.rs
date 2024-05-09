@@ -5,7 +5,7 @@ use std::{
 
 use lazy_static::lazy_static;
 
-#[derive(Debug, PartialEq, Clone, Copy, Eq)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub enum TokenType {
     Ident,
     Illegal,
@@ -34,6 +34,7 @@ pub enum TokenType {
     True,
     False,
     Return,
+    Str(String),
 }
 
 #[derive(Clone, PartialEq)]
@@ -82,6 +83,7 @@ impl Display for TokenType {
             Self::Asterisk => write!(f, "Astrisk"),
             Self::Semicolon => write!(f, "Semicolon"),
             Self::Not => write!(f, "Not"),
+            Self::Str(_) => write!(f, "String"),
         }
     }
 }

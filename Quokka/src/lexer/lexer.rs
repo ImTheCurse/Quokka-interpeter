@@ -47,6 +47,7 @@ fn split_special_chars(inp: &str) -> String {
     s = s.replace('>', " > ");
     s = s.replace('!', " ! ");
     s = s.replace('+', " + ");
+    s = s.replace('\'', " ' ");
     return s;
 }
 
@@ -68,6 +69,22 @@ impl Lexer {
         self.input = split_special_chars(&mut self.input);
         return self.clone();
     }
+
+    pub fn read_string(&mut self) -> String {
+        let mut s = String::new();
+        self.ch = self.input.clone().chars().next().unwrap_or('~');
+        while self.ch != '\'' {
+            self.ch = self.input.clone().chars().next().unwrap_or('~');
+            if self.ch == '\'' {
+                break;
+            }
+            s.push(self.ch);
+            self.input = self.input[1..].into();
+        }
+        self.input = self.input[1..].into();
+        (&s.trim()).to_string()
+    }
+
     pub fn next_token(&mut self) -> Token {
         let binding = self.input.clone();
         let first_token = binding.split_whitespace().next().unwrap_or("");
@@ -128,6 +145,13 @@ impl Lexer {
                 tok_type: TokenType::Larrow,
                 literal: "<".to_string(),
             },
+            "'" => {
+                let s = self.read_string();
+                Token {
+                    tok_type: TokenType::Str(s.clone()),
+                    literal: s.clone(),
+                }
+            }
 
             _ => {
                 //Check for != or !IDENT
