@@ -3,9 +3,11 @@ use crate::Lexer;
 use crate::AST::ast::{
     BlockStatment, Boolen, CallExpression, Expression, FunctionLiteral, Identifier, IfStatment,
     InfixExpression, IntLiteral, LetStatment, PrefixExpression, Program, ReturnStatment, Statment,
+    StringLiteral,
 };
 use c_enum::c_enum;
 use std::fmt::Write;
+use std::thread::current;
 
 #[derive(Clone)]
 pub struct Parser {
@@ -125,9 +127,9 @@ impl Parser {
 
     fn parse_expr(&mut self, prec: Precedence) -> Option<Expression> {
         // prefix
-        let mut lhs = match self.curr_token.tok_type {
+        let mut lhs = match &self.curr_token.tok_type {
             TokenType::Ident => self.parse_ident(),
-            TokenType::Int(num) => self.parse_int(num),
+            TokenType::Int(num) => self.parse_int(*num),
             TokenType::Not => self.parse_prefix_expr(),
             TokenType::Minus => self.parse_prefix_expr(),
             TokenType::Plus => self.parse_prefix_expr(),
@@ -135,6 +137,7 @@ impl Parser {
             TokenType::Lparen => self.parse_grouped_expr(),
             TokenType::If => self.parse_if_expr()?,
             TokenType::Function => self.parse_func_literal()?,
+            TokenType::Str(s) => self.parse_string_lit(s.to_string()),
             _ => self.prefix_error(),
         };
 
@@ -161,6 +164,50 @@ impl Parser {
             };
         }
         Some(lhs)
+    }
+    /*
+        s = inp.replace('(', " ( ");
+        s = s.replace(')', " ) ");
+        s = s.replace('{', " { ");
+        s = s.replace('}', " } ");
+        s = s.replace(',', " , ");
+        s = s.replace(';', " ; ");
+        s = s.replace('-', " - ");
+        s = s.replace('*', " * ");
+        s = s.replace('/', " / ");
+        s = s.replace('<', " < ");
+        s = s.replace('>', " > ");
+        s = s.replace('!', " ! ");
+        s = s.replace('+', " + ");
+        s = s.replace('\'', " ' ");
+
+    */
+
+    fn parse_string_lit(&self, s: String) -> Expression {
+        let chars = &mut s.chars();
+        let mut current = None;
+        let mut next = None;
+        let mut st = String::new();
+        while chars.as_str() != "" {
+            current = next;
+            next = chars.nth(0).clone();
+
+            match current.unwrap_or('~') {
+                // current is a whitespace because of the lexer's split_special_chars()
+                ' ' => match next.unwrap_or(' ') {
+                    '(' | ')' | '{' | '}' | ',' | ';' | '-' | '*' | '/' | '<' | '>' | '!' | '+'
+                    | '\'' => {
+                        st.push(next.unwrap());
+                        current = next;
+                        chars.next();
+                    },
+                    '~' => continue,
+                    _ => st.push(current.unwrap_or(' ')),
+                },
+                _ => st.push(current.unwrap_or(' ')),
+            }
+        }
+        Expression::Str(StringLiteral { value: st.trim_start().to_string() })
     }
 
     fn parse_call_expr(&mut self, func: &Expression) -> Expression {

@@ -47,6 +47,41 @@ mod test {
     }
 
     #[test]
+    fn test_string_literal() {
+        let input = "
+        'hello world!' 
+        ";
+        let mut l = Lexer {
+            ch: 'f',
+            input: input.to_string(),
+        };
+        let lex = Lexer::new(&mut l, input.to_string());
+        let mut prsr = Parser::new(lex);
+
+        let program = prsr.parse_program();
+        if program.is_none() {
+            panic!("Paniced @ parse_program() - no program exists.")
+        }
+        if program.clone().unwrap().statments.len() != 1 {
+            check_parser_errors(prsr.errors);
+            panic!(
+                "program.statments does not contain 1 statments, got: {}",
+                program.unwrap().statments.len()
+            );
+        }
+
+        if let Statment::Expr(exp) = &program.unwrap().statments[0] {
+            if let Expression::Str(s) = exp {
+                assert_eq!(s.value, "hello world!".to_string());
+                return;
+            }
+            panic!("Expression is not String literal");
+        }
+
+        panic!("Statment is not an expression.");
+    }
+
+    #[test]
     fn test_let_statments() {
         enum Dtype<'a> {
             Str(&'a str),

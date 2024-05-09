@@ -14,6 +14,7 @@ pub enum Expression {
     Func(FunctionLiteral),
     Call(Box<CallExpression>),
     Blank,
+    Str(StringLiteral),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -104,6 +105,11 @@ pub struct InfixExpression {
     pub rhs: Expression,
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub struct StringLiteral {
+    pub value: String,
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum Infix {
     Plus,
@@ -123,6 +129,12 @@ pub enum Prefix {
     Plus,
     Minus,
     Not,
+}
+
+impl Display for StringLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
 }
 
 impl Display for FunctionLiteral {
@@ -197,6 +209,7 @@ impl Display for Expression {
             Expression::If(stmt) => write!(f, "{}", stmt),
             Expression::Func(func) => write!(f, "{}", func),
             Expression::Call(c) => write!(f, "{}", c),
+            Expression::Str(s) => write!(f, "{}", s),
         }
     }
 }
