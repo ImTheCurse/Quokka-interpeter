@@ -82,7 +82,11 @@ impl Lexer {
             self.input = self.input[1..].into();
         }
         self.input = self.input[1..].into();
-        (&s.trim()).to_string()
+        s[0..s.len()-1].to_string()
+
+        
+        
+        //(&s.trim()).to_string()
     }
 
     pub fn next_token(&mut self) -> Token {

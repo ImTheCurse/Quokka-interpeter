@@ -200,14 +200,29 @@ impl Parser {
                         st.push(next.unwrap());
                         current = next;
                         chars.next();
-                    },
+                    }
                     '~' => continue,
                     _ => st.push(current.unwrap_or(' ')),
                 },
                 _ => st.push(current.unwrap_or(' ')),
             }
         }
-        Expression::Str(StringLiteral { value: st.trim_start().to_string() })
+    
+        if st.ends_with('(') || st.ends_with(')') || st.ends_with('{') || st.ends_with('}') || 
+        st.ends_with(',') || st.ends_with(';') || st.ends_with('-') || st.ends_with('*') ||
+        st.ends_with('/') || st.ends_with('<') || st.ends_with('>') || st.ends_with('!') || st.ends_with('+'){
+            return Expression::Str(StringLiteral {
+            value: st.trim_start().to_string(),
+        });
+        }
+
+
+        if next.is_some(){
+            st.push(next.unwrap());
+        }
+        Expression::Str(StringLiteral {
+            value: st[1..st.len()].to_string(),
+        })
     }
 
     fn parse_call_expr(&mut self, func: &Expression) -> Expression {

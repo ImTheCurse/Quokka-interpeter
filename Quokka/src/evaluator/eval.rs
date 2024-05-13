@@ -135,12 +135,32 @@ fn is_truthy(obj: &Object) -> bool {
     return false;
 }
 
+fn eval_string_infix_expr(lhs: &str, rhs: &str, op: &str) -> Object {
+    if op == "+" {
+        let mut s = String::from(lhs);
+        s.push_str(rhs);
+        return Object::Str(s);
+    }
+    create_new_error(new_error!(
+        "unknown operator:",
+        "STRING".to_string(),
+        op.to_string(),
+        "STRING".to_string()
+    ))
+}
+
 fn eval_infix_expr(lhs: &Object, rhs: &Object, op: &str) -> Object {
     if let Object::Integer(first) = rhs {
         if let Object::Integer(sec) = lhs {
             return eval_int_infix_expr(*sec, *first, op);
         }
     }
+    if let Object::Str(first) = rhs {
+        if let Object::Str(sec) = lhs {
+            return eval_string_infix_expr(sec, first, op);
+        }
+    }
+
     if lhs.Type() != rhs.Type() {
         return create_new_error(new_error!(
             "type mismatch:".to_string(),

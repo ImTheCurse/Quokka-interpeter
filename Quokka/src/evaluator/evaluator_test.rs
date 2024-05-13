@@ -54,6 +54,16 @@ mod tests {
         }
         panic!("Object is not a Str.");
     }
+    #[test]
+    fn test_string_concat() {
+        let input = "'Hello' + ' ' + 'World!'";
+        let evaluated = test_eval_helper(input.to_string());
+        if let Object::Str(s) = evaluated.unwrap() {
+            assert_eq!(s, "Hello World!");
+            return;
+        }
+        panic!("Object is not a Str.");
+    }
 
     #[test]
     fn test_func_application() {
@@ -113,6 +123,7 @@ mod tests {
                 "unknown operator: BOOLEAN + BOOLEAN",
             ),
             Test::new("foobar;", "identifier not found: foobar"),
+            Test::new("'Hello' - 'World'", "unknown operator: STRING - STRING"),
         ];
 
         for t_case in &tests {
