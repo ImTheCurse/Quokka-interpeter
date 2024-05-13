@@ -17,6 +17,7 @@ pub enum Object {
     ReturnValue(Box<Object>),
     Error(String),
     Function(FunctionLiteral, Enviornment),
+    Str(String),
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -59,6 +60,7 @@ impl Enviornment {
 }
 
 impl Obj for Object {
+    #![allow(nonstandard_style)]
     fn Type(&self) -> ObjectType {
         match *self {
             Object::Integer(_) => "INTEGER".to_string(),
@@ -67,6 +69,7 @@ impl Obj for Object {
             Object::ReturnValue(_) => "RETURN_VALUE".to_string(),
             Object::Error(_) => "ERROR".to_string(),
             Object::Function(_, _) => "FUNCTION".to_string(),
+            Object::Str(_) => "STRING".to_string(),
         }
     }
 }
@@ -91,6 +94,7 @@ impl Display for Object {
                     func.body.to_string()
                 )
             }
+            Object::Str(s) => write!(f, "{}", s),
         }
     }
 }

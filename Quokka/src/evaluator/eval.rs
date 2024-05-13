@@ -39,6 +39,7 @@ fn eval_expr(expr: &Expression, env: &mut Enviornment) -> Object {
             }
             return apply_func(&function, args);
         }
+        Expression::Str(s) => return Object::Str(s.to_string()),
         _ => return Object::Error("unknown expression, @eval_expr".to_string()),
     }
 }

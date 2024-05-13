@@ -44,6 +44,16 @@ mod tests {
             test_int_obj_helper(evaluated.unwrap(), t_case.expected);
         }
     }
+    #[test]
+    fn test_string_literal() {
+        let input = "'Hello World!'";
+        let evaluated = test_eval_helper(input.to_string());
+        if let Object::Str(s) = evaluated.unwrap() {
+            assert_eq!(s, "Hello World!");
+            return;
+        }
+        panic!("Object is not a Str.");
+    }
 
     #[test]
     fn test_func_application() {
